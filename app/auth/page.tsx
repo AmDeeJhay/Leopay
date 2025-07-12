@@ -1,8 +1,8 @@
 import { Suspense } from "react"
-import { AuthForm } from "@/components/auth/auth-form"
+import { ModernAuthForm } from "@/components/auth/modern-auth-form"
 
 function AuthFormWrapper() {
-  return <AuthForm />
+  return <ModernAuthForm />
 }
 
 export default function AuthPage() {

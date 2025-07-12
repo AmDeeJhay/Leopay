@@ -1,20 +1,17 @@
 import { Suspense } from "react"
 import { ModernRoleSelection } from "@/components/onboarding/modern-role-selection"
-
-function RoleSelectionWrapper() {
-  return <ModernRoleSelection />
-}
+import { Loader2 } from "lucide-react"
 
 export default function RoleSelectionPage() {
   return (
     <Suspense
       fallback={
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <Loader2 className="h-12 w-12 animate-spin text-primary-500" />
         </div>
       }
     >
-      <RoleSelectionWrapper />
+      <ModernRoleSelection />
     </Suspense>
   )
 }

@@ -73,11 +73,19 @@ export async function middleware(request: NextRequest) {
     // If user is authenticated
     if (user) {
       // Check if user has completed onboarding
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, kyc_verified, profile_completed")
+        .eq("id", user.id)
+        .single()
 
       // If user is on auth page and authenticated, redirect based on profile
       if (request.nextUrl.pathname === "/auth") {
         if (profile?.role) {
+          // Check if freelancer needs to complete profile/KYC
+          if (profile.role === "freelancer" && (!profile.profile_completed || !profile.kyc_verified)) {
+            return NextResponse.redirect(new URL("/profile/complete", request.url))
+          }
           return NextResponse.redirect(new URL("/dashboard", request.url))
         } else {
           return NextResponse.redirect(new URL("/onboarding/role-selection", request.url))
@@ -87,6 +95,15 @@ export async function middleware(request: NextRequest) {
       // If user hasn't completed onboarding and not on onboarding page
       if (!profile?.role && !request.nextUrl.pathname.startsWith("/onboarding")) {
         return NextResponse.redirect(new URL("/onboarding/role-selection", request.url))
+      }
+
+      // If freelancer hasn't completed profile/KYC and not on profile completion page
+      if (
+        profile?.role === "freelancer" &&
+        (!profile.profile_completed || !profile.kyc_verified) &&
+        !request.nextUrl.pathname.startsWith("/profile/complete")
+      ) {
+        return NextResponse.redirect(new URL("/profile/complete", request.url))
       }
     }
   } catch (error) {

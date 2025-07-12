@@ -89,11 +89,13 @@ export function ModernRoleSelection() {
       }
 
       // Update user profile with selected role
-      const { error } = await supabase.from("profiles").upsert({
-        id: user.id,
-        role: selectedRole,
-        updated_at: new Date().toISOString(),
-      })
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          role: selectedRole,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id)
 
       if (error) throw error
 
@@ -105,7 +107,7 @@ export function ModernRoleSelection() {
       // Redirect based on role
       switch (selectedRole) {
         case "freelancer":
-          router.push("/dashboard")
+          router.push("/profile/complete")
           break
         case "contractor":
           router.push("/payroll/contractor")
