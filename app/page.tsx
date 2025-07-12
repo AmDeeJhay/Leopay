@@ -1,21 +1,25 @@
-import { LandingNavbar } from "@/components/landing/navbar"
 import { HeroSection } from "@/components/landing/hero-section"
 import { FeaturesSection } from "@/components/landing/features-section"
 import { HowItWorksSection } from "@/components/landing/how-it-works-section"
 import { PricingSection } from "@/components/landing/pricing-section"
 import { AboutSection } from "@/components/landing/about-section"
+import { CTASection } from "@/components/landing/cta-section"
 import { Footer } from "@/components/landing/footer"
+import { LandingNavbar } from "@/components/landing/navbar"
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen">
+    <div className="min-h-screen bg-white">
       <LandingNavbar />
-      <HeroSection />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <PricingSection />
-      <AboutSection />
+      <main>
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <PricingSection />
+        <AboutSection />
+        <CTASection />
+      </main>
       <Footer />
-    </main>
+    </div>
   )
 }

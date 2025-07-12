@@ -54,32 +54,44 @@ export async function middleware(request: NextRequest) {
     },
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  // Public routes that don't require authentication
-  const publicRoutes = ["/", "/auth"]
-  const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
+    // Public routes that don't require authentication
+    const publicRoutes = ["/", "/auth"]
+    const isPublicRoute = publicRoutes.some(
+      (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route),
+    )
 
-  // If user is not authenticated and trying to access protected route
-  if (!user && !isPublicRoute) {
-    return NextResponse.redirect(new URL("/auth", request.url))
-  }
-
-  // If user is authenticated but hasn't completed onboarding
-  if (user && request.nextUrl.pathname !== "/onboarding/role-selection") {
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-
-    // If no profile exists or role is not set, redirect to role selection
-    if (!profile || !profile.role) {
-      return NextResponse.redirect(new URL("/onboarding/role-selection", request.url))
+    // If user is not authenticated and trying to access protected route
+    if (!user && !isPublicRoute) {
+      return NextResponse.redirect(new URL("/auth", request.url))
     }
-  }
 
-  // If user is authenticated and trying to access auth page, redirect to dashboard
-  if (user && request.nextUrl.pathname === "/auth") {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+    // If user is authenticated
+    if (user) {
+      // Check if user has completed onboarding
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+
+      // If user is on auth page and authenticated, redirect based on profile
+      if (request.nextUrl.pathname === "/auth") {
+        if (profile?.role) {
+          return NextResponse.redirect(new URL("/dashboard", request.url))
+        } else {
+          return NextResponse.redirect(new URL("/onboarding/role-selection", request.url))
+        }
+      }
+
+      // If user hasn't completed onboarding and not on onboarding page
+      if (!profile?.role && !request.nextUrl.pathname.startsWith("/onboarding")) {
+        return NextResponse.redirect(new URL("/onboarding/role-selection", request.url))
+      }
+    }
+  } catch (error) {
+    console.error("Middleware error:", error)
+    // On error, allow the request to continue
   }
 
   return response

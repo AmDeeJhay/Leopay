@@ -7,17 +7,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Wallet, Mail, ArrowLeft } from "lucide-react"
+import { Wallet, Mail, ArrowLeft, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [isSignUp, setIsSignUp] = useState(false)
   const [preselectedRole, setPreselectedRole] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
 
   useEffect(() => {
     const role = searchParams.get("role")
@@ -27,22 +30,68 @@ export function AuthForm() {
   }, [searchParams])
 
   const handleEmailAuth = async (type: "signin" | "signup") => {
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
     try {
-      const { data, error } =
-        type === "signin"
-          ? await supabase.auth.signInWithPassword({ email, password })
-          : await supabase.auth.signUp({ email, password })
-
-      if (error) throw error
-
       if (type === "signup") {
-        router.push(`/onboarding/role-selection${preselectedRole ? `?role=${preselectedRole}` : ""}`)
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        })
+
+        if (error) throw error
+
+        if (data.user) {
+          toast({
+            title: "Success!",
+            description: "Please check your email to confirm your account.",
+          })
+          // Redirect to role selection after signup
+          router.push(`/onboarding/role-selection${preselectedRole ? `?role=${preselectedRole}` : ""}`)
+        }
       } else {
-        router.push("/dashboard")
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (error) throw error
+
+        if (data.user) {
+          // Check if user has completed onboarding
+          const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single()
+
+          toast({
+            title: "Success!",
+            description: "Signed in successfully.",
+          })
+
+          // Redirect based on profile completion
+          if (profile?.role) {
+            router.push("/dashboard")
+          } else {
+            router.push("/onboarding/role-selection")
+          }
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Auth error:", error)
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred during authentication",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -51,10 +100,20 @@ export function AuthForm() {
   const handleWalletConnect = async () => {
     setIsLoading(true)
     try {
+      // Simulate wallet connection - in real app, integrate with Aleo wallet
       console.log("Connecting wallet...")
+      toast({
+        title: "Wallet Connected",
+        description: "Successfully connected to wallet.",
+      })
       router.push(`/onboarding/role-selection${preselectedRole ? `?role=${preselectedRole}` : ""}`)
     } catch (error) {
       console.error("Wallet connection error:", error)
+      toast({
+        title: "Error",
+        description: "Failed to connect wallet",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -117,6 +176,7 @@ export function AuthForm() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="h-12 rounded-2xl border-gray-200 focus:border-blue-300"
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -130,26 +190,66 @@ export function AuthForm() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-12 rounded-2xl border-gray-200 focus:border-blue-300"
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <Button
-                    className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold rounded-2xl"
-                    onClick={() => handleEmailAuth("signin")}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Signing in..." : "Sign In"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full h-12 border-2 border-gray-200 hover:border-blue-300 font-semibold rounded-2xl bg-white/80"
-                    onClick={() => handleEmailAuth("signup")}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Creating account..." : "Create Account"}
-                  </Button>
-                </div>
+
+                {!isSignUp ? (
+                  <div className="space-y-3">
+                    <Button
+                      className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold rounded-2xl"
+                      onClick={() => handleEmailAuth("signin")}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Signing in...
+                        </>
+                      ) : (
+                        "Sign In"
+                      )}
+                    </Button>
+                    <div className="text-center text-sm text-gray-600">
+                      Don't have an account?{" "}
+                      <button
+                        onClick={() => setIsSignUp(true)}
+                        className="text-blue-600 hover:underline font-medium"
+                        disabled={isLoading}
+                      >
+                        Sign up
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Button
+                      className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold rounded-2xl"
+                      onClick={() => handleEmailAuth("signup")}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating account...
+                        </>
+                      ) : (
+                        "Create Account"
+                      )}
+                    </Button>
+                    <div className="text-center text-sm text-gray-600">
+                      Already have an account?{" "}
+                      <button
+                        onClick={() => setIsSignUp(false)}
+                        className="text-blue-600 hover:underline font-medium"
+                        disabled={isLoading}
+                      >
+                        Sign in
+                      </button>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="wallet" className="space-y-6">
@@ -168,7 +268,14 @@ export function AuthForm() {
                     onClick={handleWalletConnect}
                     disabled={isLoading}
                   >
-                    {isLoading ? "Connecting..." : "Connect Wallet"}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      "Connect Wallet"
+                    )}
                   </Button>
                 </div>
               </TabsContent>

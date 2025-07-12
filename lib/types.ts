@@ -1,4 +1,4 @@
-export type UserType = "freelancer" | "contractor" | "employer" | "dao" | "employee"
+export type UserType = "contractor" | "employer" | "dao" | "employee"
 
 export interface UserProfile {
   id: string
@@ -26,23 +26,11 @@ export interface Transaction {
   id: string
   amount: number
   currency: string
-  type: "payment" | "withdrawal" | "deposit"
+  type: "payment" | "refund" | "fee"
   status: "pending" | "completed" | "failed"
-  description: string
-  user_id: string
-  created_at: string
-  updated_at: string
-}
-
-export interface PayrollEntry {
-  id: string
-  employee_id: string
-  amount: number
-  currency: string
-  pay_period_start: string
-  pay_period_end: string
-  status: "draft" | "pending" | "paid"
-  created_by: string
+  from_user: string
+  to_user: string
+  description: string | null
   created_at: string
   updated_at: string
 }

@@ -1,6 +1,4 @@
-"use client"
-
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 
 export interface AuthUser extends User {
@@ -9,8 +7,6 @@ export interface AuthUser extends User {
     user_type?: "contractor" | "employer" | "dao" | "employee"
   }
 }
-
-export const supabase = createClientComponentClient()
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const {
