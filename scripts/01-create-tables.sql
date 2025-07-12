@@ -1,53 +1,107 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Enable RLS
+ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret';
 
--- Create ENUM types
-CREATE TYPE auth_type_enum AS ENUM ('email', 'wallet');
-CREATE TYPE user_role_enum AS ENUM ('freelancer', 'employee');
-CREATE TYPE task_status_enum AS ENUM ('open', 'in_progress', 'completed');
-CREATE TYPE payment_type_enum AS ENUM ('freelance', 'payroll');
-
--- Users table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    auth_type auth_type_enum NOT NULL,
-    email TEXT,
-    wallet_address TEXT,
-    role user_role_enum NOT NULL,
-    skills TEXT[],
-    zk_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Create profiles table
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  full_name TEXT,
+  avatar_url TEXT,
+  role TEXT CHECK (role IN ('freelancer', 'employee', 'employer', 'business', 'dao')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Tasks table (for Freelance flow)
-CREATE TABLE tasks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    required_skills TEXT[],
-    client_wallet TEXT,
-    is_escrowed BOOLEAN DEFAULT FALSE,
-    amount NUMERIC(10,2),
-    status task_status_enum DEFAULT 'open',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Create tasks table
+CREATE TABLE IF NOT EXISTS tasks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+  due_date TIMESTAMPTZ,
+  assigned_to UUID REFERENCES profiles(id),
+  created_by UUID REFERENCES profiles(id) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Payments table
-CREATE TABLE payments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    sender_wallet TEXT,
-    receiver_wallet TEXT,
-    amount NUMERIC(10,2) NOT NULL,
-    proof_hash TEXT,
-    type payment_type_enum NOT NULL,
-    paid_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Create transactions table
+CREATE TABLE IF NOT EXISTS transactions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  amount DECIMAL(10,2) NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  type TEXT NOT NULL CHECK (type IN ('payment', 'refund', 'withdrawal')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed')),
+  from_user_id UUID REFERENCES profiles(id),
+  to_user_id UUID REFERENCES profiles(id),
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add indexes for better performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_wallet ON users(wallet_address);
-CREATE INDEX idx_tasks_status ON tasks(status);
-CREATE INDEX idx_payments_type ON payments(type);
+-- Create payroll_entries table
+CREATE TABLE IF NOT EXISTS payroll_entries (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  employee_id UUID REFERENCES profiles(id) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  pay_period_start DATE NOT NULL,
+  pay_period_end DATE NOT NULL,
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'pending', 'paid', 'cancelled')),
+  created_by UUID REFERENCES profiles(id) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS on all tables
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payroll_entries ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can view assigned tasks" ON tasks FOR SELECT USING (
+  auth.uid() = assigned_to OR auth.uid() = created_by
+);
+CREATE POLICY "Users can create tasks" ON tasks FOR INSERT WITH CHECK (auth.uid() = created_by);
+CREATE POLICY "Users can update assigned tasks" ON tasks FOR UPDATE USING (
+  auth.uid() = assigned_to OR auth.uid() = created_by
+);
+
+CREATE POLICY "Users can view own transactions" ON transactions FOR SELECT USING (
+  auth.uid() = from_user_id OR auth.uid() = to_user_id
+);
+CREATE POLICY "Users can create transactions" ON transactions FOR INSERT WITH CHECK (
+  auth.uid() = from_user_id
+);
+
+CREATE POLICY "Users can view own payroll" ON payroll_entries FOR SELECT USING (
+  auth.uid() = employee_id OR auth.uid() = created_by
+);
+CREATE POLICY "Employers can create payroll entries" ON payroll_entries FOR INSERT WITH CHECK (
+  auth.uid() = created_by
+);
+CREATE POLICY "Employers can update payroll entries" ON payroll_entries FOR UPDATE USING (
+  auth.uid() = created_by
+);
+
+-- Create function to handle profile creation
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name)
+  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'full_name');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger for new user registration
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

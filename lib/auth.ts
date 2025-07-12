@@ -1,53 +1,64 @@
-"use client"
-
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 
-export interface AuthUser extends User {
-  user_metadata: {
-    role?: "freelancer" | "employee"
-    user_type?: "contractor" | "employer" | "dao" | "employee"
+export async function signUp(email: string, password: string) {
+  const supabase = createClient()
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  })
+
+  if (error) {
+    throw error
   }
+
+  return data
 }
 
-export const supabase = createClientComponentClient()
+export async function signIn(email: string, password: string) {
+  const supabase = createClient()
 
-export async function getCurrentUser(): Promise<AuthUser | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user as AuthUser
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  return data
 }
 
 export async function signOut() {
+  const supabase = createClient()
+
   const { error } = await supabase.auth.signOut()
-  if (error) throw error
+
+  if (error) {
+    throw error
+  }
 }
 
-export function getUserRole(user: AuthUser | null): "freelancer" | "employee" | null {
-  return user?.user_metadata?.role || null
+export async function getCurrentUser(): Promise<User | null> {
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  return user
 }
 
-export function getUserType(user: AuthUser | null): string | null {
-  return user?.user_metadata?.user_type || null
-}
+export async function updateProfile(userId: string, updates: any) {
+  const supabase = createClient()
 
-export function getRedirectPath(user: AuthUser | null): string {
-  if (!user) return "/auth"
+  const { data, error } = await supabase.from("profiles").update(updates).eq("id", userId).select().single()
 
-  const role = getUserRole(user)
-  const userType = getUserType(user)
-
-  if (role === "employee") {
-    if (userType === "employer") return "/payroll/employer"
-    if (userType === "dao") return "/payroll/dao"
-    return "/payroll/employee"
+  if (error) {
+    throw error
   }
 
-  if (role === "freelancer") {
-    if (userType === "contractor") return "/payroll/contractor"
-    return "/dashboard"
-  }
-
-  return "/dashboard"
+  return data
 }
