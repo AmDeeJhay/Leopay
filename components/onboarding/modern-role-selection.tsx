@@ -49,6 +49,7 @@ const roles = [
 export function ModernRoleSelection() {
   const [selectedRole, setSelectedRole] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -59,6 +60,40 @@ export function ModernRoleSelection() {
       setSelectedRole(preselectedRole)
     }
   }, [searchParams])
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        console.log("Session check:", { 
+          session: session?.user?.id, 
+          error,
+          expires_at: session?.expires_at 
+        })
+
+        if (error || !session) {
+          console.error("No valid session found:", error)
+          toast({
+            title: "Authentication Required",
+            description: "Please sign in to continue",
+            variant: "destructive",
+          })
+          router.push("/auth")
+          return
+        }
+
+        // Session is valid, continue with role selection
+        setIsCheckingAuth(false)
+      } catch (error) {
+        console.error("Auth check error:", error)
+        router.push("/auth")
+      }
+    }
+
+    checkAuth()
+  }, [])
 
   // Handle role selection directly
   const handleRoleClick = (roleId: string) => {
@@ -78,28 +113,27 @@ export function ModernRoleSelection() {
 
     setIsLoading(true)
     try {
-      // Check authentication status
-      const {
-        data: { user },
-        error: authError
-      } = await supabase.auth.getUser()
+      // Use getSession instead of getUser for better session handling
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-      console.log("Auth check:", { 
-        user: user?.id, 
-        email: user?.email,
-        authError 
-      }) // Debug log
+      console.log("Session check for role update:", { 
+        session: session?.user?.id, 
+        sessionError,
+        expires_at: session?.expires_at 
+      })
 
-      if (authError || !user) {
-        console.error("Authentication error:", authError)
+      if (sessionError || !session || !session.user) {
+        console.error("Session error:", sessionError)
         toast({
-          title: "Authentication Error",
+          title: "Session Expired",
           description: "Please sign in again to continue",
           variant: "destructive",
         })
         router.push("/auth")
         return
       }
+
+      const user = session.user
 
       // First, check if profile exists
       const { data: existingProfile, error: fetchError } = await supabase
@@ -108,7 +142,7 @@ export function ModernRoleSelection() {
         .eq("id", user.id)
         .single()
 
-      console.log("Existing profile:", { existingProfile, fetchError }) // Debug log
+      console.log("Existing profile:", { existingProfile, fetchError })
 
       let profileError = null;
 
@@ -122,7 +156,7 @@ export function ModernRoleSelection() {
             full_name: user.user_metadata?.full_name || null,
             avatar_url: user.user_metadata?.avatar_url || null,
             role: selectedRole,
-            user_type: selectedRole, // Update both columns
+            user_type: selectedRole,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
@@ -135,7 +169,7 @@ export function ModernRoleSelection() {
           .from("profiles")
           .update({
             role: selectedRole,
-            user_type: selectedRole, // Update both columns
+            user_type: selectedRole,
             updated_at: new Date().toISOString(),
           })
           .eq("id", user.id)
@@ -146,7 +180,7 @@ export function ModernRoleSelection() {
         profileError = fetchError;
       }
 
-      console.log("Profile operation result:", { profileError }) // Debug log
+      console.log("Profile operation result:", { profileError })
 
       if (profileError) {
         console.error("Profile operation error:", profileError)
@@ -162,7 +196,7 @@ export function ModernRoleSelection() {
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       // Redirect based on role
-      console.log("Redirecting to role:", selectedRole) // Debug log
+      console.log("Redirecting to role:", selectedRole)
       
       switch (selectedRole) {
         case "freelancer":
@@ -204,81 +238,93 @@ export function ModernRoleSelection() {
       </div>
 
       <div className="relative z-10 w-full max-w-2xl">
-        <Card className="backdrop-blur-sm bg-white/90 border-0 shadow-2xl">
-          <CardHeader className="text-center pb-8">
-            <CardTitle className="text-3xl font-bold">Choose Your Role</CardTitle>
-            <CardDescription className="text-lg">
-              Select how you'll be using LeoPay to get started with the right features
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Role Selection - Simplified approach */}
-            <div className="space-y-4">
-              {roles.map((role) => {
-                const Icon = role.icon
-                const isSelected = selectedRole === role.id
-                
-                return (
-                  <div
-                    key={role.id}
-                    onClick={() => handleRoleClick(role.id)}
-                    className={`
-                      flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200
-                      ${isSelected 
-                        ? 'border-blue-500 bg-blue-50 shadow-lg' 
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-md hover:bg-gray-50'
-                      }
-                    `}
-                  >
-                    <div
-                      className={`w-12 h-12 rounded-xl bg-gradient-to-r ${role.color} flex items-center justify-center flex-shrink-0`}
-                    >
-                      <Icon className="h-6 w-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">{role.title}</h3>
-                      <p className="text-sm text-gray-600">{role.description}</p>
-                    </div>
-                    <div className={`
-                      w-5 h-5 border-2 rounded-full flex items-center justify-center transition-all
-                      ${isSelected 
-                        ? 'border-blue-500 bg-blue-500' 
-                        : 'border-gray-300'
-                      }
-                    `}>
-                      {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Debug info - remove in production */}
-            {selectedRole && (
-              <div className="text-sm text-gray-500 text-center">
-                Selected: {selectedRole}
+        {/* Show loading spinner while checking auth */}
+        {isCheckingAuth ? (
+          <Card className="backdrop-blur-sm bg-white/90 border-0 shadow-2xl">
+            <CardContent className="flex items-center justify-center p-12">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
+                <p className="text-gray-600">Checking authentication...</p>
               </div>
-            )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="backdrop-blur-sm bg-white/90 border-0 shadow-2xl">
+            <CardHeader className="text-center pb-8">
+              <CardTitle className="text-3xl font-bold">Choose Your Role</CardTitle>
+              <CardDescription className="text-lg">
+                Select how you'll be using LeoPay to get started with the right features
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Role Selection - Simplified approach */}
+              <div className="space-y-4">
+                {roles.map((role) => {
+                  const Icon = role.icon
+                  const isSelected = selectedRole === role.id
+                  
+                  return (
+                    <div
+                      key={role.id}
+                      onClick={() => handleRoleClick(role.id)}
+                      className={`
+                        flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200
+                        ${isSelected 
+                          ? 'border-blue-500 bg-blue-50 shadow-lg' 
+                          : 'border-gray-200 hover:border-blue-300 hover:shadow-md hover:bg-gray-50'
+                        }
+                      `}
+                    >
+                      <div
+                        className={`w-12 h-12 rounded-xl bg-gradient-to-r ${role.color} flex items-center justify-center flex-shrink-0`}
+                      >
+                        <Icon className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900">{role.title}</h3>
+                        <p className="text-sm text-gray-600">{role.description}</p>
+                      </div>
+                      <div className={`
+                        w-5 h-5 border-2 rounded-full flex items-center justify-center transition-all
+                        ${isSelected 
+                          ? 'border-blue-500 bg-blue-500' 
+                          : 'border-gray-300'
+                        }
+                      `}>
+                        {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
 
-            <Button
-              onClick={handleRoleSelection}
-              disabled={!selectedRole || isLoading}
-              className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold rounded-2xl"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Setting up your account...
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
+              {/* Debug info - remove in production */}
+              {selectedRole && (
+                <div className="text-sm text-gray-500 text-center">
+                  Selected: {selectedRole}
+                </div>
               )}
-            </Button>
-          </CardContent>
-        </Card>
+
+              <Button
+                onClick={handleRoleSelection}
+                disabled={!selectedRole || isLoading}
+                className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold rounded-2xl"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Setting up your account...
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
