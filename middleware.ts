@@ -1,25 +1,50 @@
 import { createServerClient } from "@supabase/ssr"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => req.cookies.get(name)?.value,
-        set: (name, value, options) => {
-          res.cookies.set({
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
             name,
             value,
             ...options,
           })
         },
-        remove: (name, options) => {
-          res.cookies.set({
+        remove(name: string, options: any) {
+          request.cookies.set({
+            name,
+            value: "",
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
             name,
             value: "",
             ...options,
@@ -29,57 +54,46 @@ export async function middleware(req: NextRequest) {
     },
   )
 
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    // Protect dashboard and other authenticated routes
-    const protectedRoutes = [
-      "/dashboard",
-      "/profile",
-      "/settings",
-      "/payroll",
-      "/employees",
-      "/tasks",
-      "/transactions",
-      "/payments",
-      "/wallet",
-    ]
-    const isProtectedRoute = protectedRoutes.some((route) => req.nextUrl.pathname.startsWith(route))
+  // Public routes that don't require authentication
+  const publicRoutes = ["/", "/auth"]
+  const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
 
-    if (isProtectedRoute && !user) {
-      return NextResponse.redirect(new URL("/auth", req.url))
-    }
-
-    // Redirect authenticated users away from auth page
-    if (req.nextUrl.pathname.startsWith("/auth") && user) {
-      // Check if user has completed onboarding by checking if they have a role
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-
-      if (profile?.role) {
-        return NextResponse.redirect(new URL("/dashboard", req.url))
-      } else {
-        return NextResponse.redirect(new URL("/onboarding/role-selection", req.url))
-      }
-    }
-
-    // Redirect users who haven't completed onboarding
-    if (user && !req.nextUrl.pathname.startsWith("/onboarding") && !req.nextUrl.pathname.startsWith("/auth")) {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-
-      if (!profile?.role && !req.nextUrl.pathname.startsWith("/onboarding")) {
-        return NextResponse.redirect(new URL("/onboarding/role-selection", req.url))
-      }
-    }
-  } catch (error) {
-    console.error("Middleware error:", error)
-    // On error, allow the request to continue
+  // If user is not authenticated and trying to access protected route
+  if (!user && !isPublicRoute) {
+    return NextResponse.redirect(new URL("/auth", request.url))
   }
 
-  return res
+  // If user is authenticated but hasn't completed onboarding
+  if (user && request.nextUrl.pathname !== "/onboarding/role-selection") {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+
+    // If no profile exists or role is not set, redirect to role selection
+    if (!profile || !profile.role) {
+      return NextResponse.redirect(new URL("/onboarding/role-selection", request.url))
+    }
+  }
+
+  // If user is authenticated and trying to access auth page, redirect to dashboard
+  if (user && request.nextUrl.pathname === "/auth") {
+    return NextResponse.redirect(new URL("/dashboard", request.url))
+  }
+
+  return response
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 }

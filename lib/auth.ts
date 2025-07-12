@@ -51,10 +51,13 @@ export async function getCurrentUser(): Promise<User | null> {
   return user
 }
 
-export async function updateProfile(userId: string, updates: any) {
+export async function updateUserProfile(userId: string, updates: any) {
   const supabase = createClient()
 
-  const { data, error } = await supabase.from("profiles").update(updates).eq("id", userId).select().single()
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert({ id: userId, ...updates })
+    .select()
 
   if (error) {
     throw error
