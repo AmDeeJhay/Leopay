@@ -4,8 +4,6 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
 import { Users, Briefcase, Building, Coins, ArrowRight, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -61,6 +59,12 @@ export function ModernRoleSelection() {
       setSelectedRole(preselectedRole)
     }
   }, [searchParams])
+
+  // Handle role selection directly
+  const handleRoleClick = (roleId: string) => {
+    setSelectedRole(roleId)
+    console.log("Role selected:", roleId) // Debug log
+  }
 
   const handleRoleSelection = async () => {
     if (!selectedRole) {
@@ -153,33 +157,53 @@ export function ModernRoleSelection() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <RadioGroup value={selectedRole} onValueChange={setSelectedRole} className="space-y-4">
+            {/* Role Selection - Simplified approach */}
+            <div className="space-y-4">
               {roles.map((role) => {
                 const Icon = role.icon
+                const isSelected = selectedRole === role.id
+                
                 return (
-                  <div key={role.id} className="relative">
-                    <RadioGroupItem value={role.id} id={role.id} className="peer sr-only" />
-                    <Label
-                      htmlFor={role.id}
-                      className="flex items-center space-x-4 p-6 rounded-2xl border-2 border-gray-200 cursor-pointer transition-all hover:border-blue-300 hover:shadow-md peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:shadow-lg"
+                  <div
+                    key={role.id}
+                    onClick={() => handleRoleClick(role.id)}
+                    className={`
+                      flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200
+                      ${isSelected 
+                        ? 'border-blue-500 bg-blue-50 shadow-lg' 
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-md hover:bg-gray-50'
+                      }
+                    `}
+                  >
+                    <div
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-r ${role.color} flex items-center justify-center flex-shrink-0`}
                     >
-                      <div
-                        className={`w-12 h-12 rounded-xl bg-gradient-to-r ${role.color} flex items-center justify-center flex-shrink-0`}
-                      >
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">{role.title}</h3>
-                        <p className="text-sm text-gray-600">{role.description}</p>
-                      </div>
-                      <div className="w-5 h-5 border-2 border-gray-300 rounded-full peer-checked:border-blue-500 peer-checked:bg-blue-500 flex items-center justify-center">
-                        {selectedRole === role.id && <div className="w-2 h-2 bg-white rounded-full" />}
-                      </div>
-                    </Label>
+                      <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">{role.title}</h3>
+                      <p className="text-sm text-gray-600">{role.description}</p>
+                    </div>
+                    <div className={`
+                      w-5 h-5 border-2 rounded-full flex items-center justify-center transition-all
+                      ${isSelected 
+                        ? 'border-blue-500 bg-blue-500' 
+                        : 'border-gray-300'
+                      }
+                    `}>
+                      {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
                   </div>
                 )
               })}
-            </RadioGroup>
+            </div>
+
+            {/* Debug info - remove in production */}
+            {selectedRole && (
+              <div className="text-sm text-gray-500 text-center">
+                Selected: {selectedRole}
+              </div>
+            )}
 
             <Button
               onClick={handleRoleSelection}
