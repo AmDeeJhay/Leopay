@@ -84,7 +84,11 @@ export function ModernRoleSelection() {
         error: authError
       } = await supabase.auth.getUser()
 
-      console.log("Auth check:", { user: user?.id, authError }) // Debug log
+      console.log("Auth check:", { 
+        user: user?.id, 
+        email: user?.email,
+        authError 
+      }) // Debug log
 
       if (authError || !user) {
         console.error("Authentication error:", authError)
@@ -97,37 +101,56 @@ export function ModernRoleSelection() {
         return
       }
 
-      // Try to update user profile with selected role
-      const { error: updateError } = await supabase
+      // First, check if profile exists
+      const { data: existingProfile, error: fetchError } = await supabase
         .from("profiles")
-        .update({
-          role: selectedRole,
-          updated_at: new Date().toISOString(),
-        })
+        .select("*")
         .eq("id", user.id)
+        .single()
 
-      console.log("Profile update:", { updateError }) // Debug log
+      console.log("Existing profile:", { existingProfile, fetchError }) // Debug log
 
-      if (updateError) {
-        console.error("Profile update error:", updateError)
+      let profileError = null;
+
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        console.log("Creating new profile...")
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            full_name: user.user_metadata?.full_name || null,
+            avatar_url: user.user_metadata?.avatar_url || null,
+            role: selectedRole,
+            user_type: selectedRole, // Update both columns
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
         
-        // If profile doesn't exist, try to create it
-        if (updateError.code === 'PGRST116') {
-          const { error: insertError } = await supabase
-            .from("profiles")
-            .insert({
-              id: user.id,
-              role: selectedRole,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-          
-          if (insertError) {
-            throw insertError
-          }
-        } else {
-          throw updateError
-        }
+        profileError = insertError;
+      } else if (!fetchError) {
+        // Profile exists, update it
+        console.log("Updating existing profile...")
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({
+            role: selectedRole,
+            user_type: selectedRole, // Update both columns
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", user.id)
+        
+        profileError = updateError;
+      } else {
+        // Other fetch error
+        profileError = fetchError;
+      }
+
+      console.log("Profile operation result:", { profileError }) // Debug log
+
+      if (profileError) {
+        console.error("Profile operation error:", profileError)
+        throw profileError
       }
 
       toast({
