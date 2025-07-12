@@ -78,22 +78,27 @@ export function ModernRoleSelection() {
 
     setIsLoading(true)
     try {
+      // Check authentication status
       const {
         data: { user },
+        error: authError
       } = await supabase.auth.getUser()
 
-      if (!user) {
+      console.log("Auth check:", { user: user?.id, authError }) // Debug log
+
+      if (authError || !user) {
+        console.error("Authentication error:", authError)
         toast({
-          title: "Error",
-          description: "You must be logged in to select a role",
+          title: "Authentication Error",
+          description: "Please sign in again to continue",
           variant: "destructive",
         })
         router.push("/auth")
         return
       }
 
-      // Update user profile with selected role
-      const { error } = await supabase
+      // Try to update user profile with selected role
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({
           role: selectedRole,
@@ -101,14 +106,41 @@ export function ModernRoleSelection() {
         })
         .eq("id", user.id)
 
-      if (error) throw error
+      console.log("Profile update:", { updateError }) // Debug log
+
+      if (updateError) {
+        console.error("Profile update error:", updateError)
+        
+        // If profile doesn't exist, try to create it
+        if (updateError.code === 'PGRST116') {
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              role: selectedRole,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+          
+          if (insertError) {
+            throw insertError
+          }
+        } else {
+          throw updateError
+        }
+      }
 
       toast({
         title: "Success!",
         description: "Your role has been set successfully.",
       })
 
+      // Add delay to ensure toast shows before navigation
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
       // Redirect based on role
+      console.log("Redirecting to role:", selectedRole) // Debug log
+      
       switch (selectedRole) {
         case "freelancer":
           router.push("/profile/complete")
@@ -132,7 +164,7 @@ export function ModernRoleSelection() {
       console.error("Role selection error:", error)
       toast({
         title: "Error",
-        description: error.message || "Failed to set role",
+        description: error.message || "Failed to set role. Please try again.",
         variant: "destructive",
       })
     } finally {
