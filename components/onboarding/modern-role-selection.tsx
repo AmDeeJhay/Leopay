@@ -93,7 +93,7 @@ export function ModernRoleSelection() {
     }
 
     checkAuth()
-  }, [])
+  }, [router, toast])
 
   // Handle role selection directly
   const handleRoleClick = (roleId: string) => {
@@ -187,36 +187,45 @@ export function ModernRoleSelection() {
         throw profileError
       }
 
+      // Show success toast
       toast({
         title: "Success!",
         description: "Your role has been set successfully.",
       })
 
-      // Add delay to ensure toast shows before navigation
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Wait a bit longer to ensure database operation is complete
+      await new Promise(resolve => setTimeout(resolve, 1500))
 
-      // Redirect based on role
+      // Redirect based on role with window.location for more reliable navigation
       console.log("Redirecting to role:", selectedRole)
+      
+      let redirectPath = "/dashboard"
       
       switch (selectedRole) {
         case "freelancer":
-          router.push("/profile/complete")
+          redirectPath = "/profile/complete"
           break
         case "contractor":
-          router.push("/payroll/contractor")
+          redirectPath = "/payroll/contractor"
           break
         case "employer":
-          router.push("/payroll/employer")
+          redirectPath = "/payroll/employer"
           break
         case "dao":
-          router.push("/payroll/dao")
+          redirectPath = "/payroll/dao"
           break
         case "employee":
-          router.push("/payroll/employee")
+          redirectPath = "/payroll/employee"
           break
         default:
-          router.push("/dashboard")
+          redirectPath = "/dashboard"
       }
+
+      // Use window.location.href for more reliable navigation
+      // This ensures the page actually navigates instead of potentially being blocked
+      console.log("Navigating to:", redirectPath)
+      window.location.href = redirectPath
+
     } catch (error: any) {
       console.error("Role selection error:", error)
       toast({
