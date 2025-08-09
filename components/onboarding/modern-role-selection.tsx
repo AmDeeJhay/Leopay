@@ -1,18 +1,29 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import type { ComponentType } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Briefcase, Building, Coins, ArrowRight, Loader2 } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { Users, Briefcase, Building, Coins, ArrowRight, Loader2, Send, Download } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { setRoleAndSubrole } from "@/app/onboarding/role-selection/actions"
 
-const roles = [
+type Subrole = "receiver" | "sender"
+
+type RoleDef = {
+  id: "freelancer" | "contractor" | "employee" | "employer" | "dao"
+  title: string
+  description: string
+  icon: ComponentType<{ className?: string }>
+  color: string
+}
+
+const baseRoles: RoleDef[] = [
   {
     id: "freelancer",
     title: "Freelancer",
-    description: "Independent contractor working on projects",
+    description: "Independent contractor",
     icon: Users,
     color: "from-blue-500 to-cyan-500",
   },
@@ -24,305 +35,223 @@ const roles = [
     color: "from-purple-500 to-pink-500",
   },
   {
+    id: "employee",
+    title: "Employee",
+    description: "Receives salary, views zkPayslips",
+    icon: Users,
+    color: "from-indigo-500 to-blue-500",
+  },
+  {
     id: "employer",
     title: "Employer",
-    description: "Business hiring talent and managing payroll",
+    description: "Sends payroll, manages employees",
     icon: Building,
     color: "from-green-500 to-emerald-500",
   },
   {
     id: "dao",
     title: "DAO",
-    description: "Decentralized organization managing payments",
+    description: "Decentralized org payments",
     icon: Coins,
     color: "from-orange-500 to-red-500",
   },
-  {
-    id: "employee",
-    title: "Employee",
-    description: "Team member receiving regular payments",
-    icon: Users,
-    color: "from-indigo-500 to-blue-500",
-  },
 ]
 
+function SubrolePicker({
+  role,
+  selected,
+  onSelect,
+}: {
+  role: RoleDef["id"] | ""
+  selected: Subrole | ""
+  onSelect: (v: Subrole) => void
+}) {
+  const choices = useMemo(() => {
+    if (role === "freelancer") {
+      return [
+        { id: "receiver" as const, label: "Receiver", desc: "Receive payments, explore tasks", Icon: Download },
+        { id: "sender" as const, label: "Client", desc: "Post tasks, hire freelancers, send payments", Icon: Send },
+      ]
+    }
+    if (role === "contractor") {
+      return [
+        { id: "receiver" as const, label: "Receiver", desc: "Submit invoices, receive payments", Icon: Download },
+        { id: "sender" as const, label: "Client", desc: "Pay contractors, manage invoices", Icon: Send },
+      ]
+    }
+    if (role === "employee") {
+      return [{ id: "receiver" as const, label: "Receiver", desc: "Receive salary, view zkPayslips", Icon: Download }]
+    }
+    if (role === "employer") {
+      return [{ id: "sender" as const, label: "Sender", desc: "Send payroll, manage employees, analytics", Icon: Send }]
+    }
+    if (role === "dao") {
+      return [
+        {
+          id: "receiver" as const,
+          label: "Contributor",
+          desc: "Track contributions, receive DAO payments",
+          Icon: Download,
+        },
+        { id: "sender" as const, label: "Admin", desc: "Manage treasury, send payments, analytics", Icon: Send },
+      ]
+    }
+    return []
+  }, [role])
+
+  useEffect(() => {
+    if (choices.length === 1 && selected !== choices[0].id) {
+      onSelect(choices[0].id)
+    }
+  }, [choices, selected, onSelect])
+
+  if (!role) return null
+
+  return (
+    <div className="space-y-3">
+      <div className="text-sm font-medium text-gray-700">Choose your subrole</div>
+      <div className="space-y-3">
+        {choices.map(({ id, label, desc, Icon }) => {
+          const isSelected = selected === id
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onSelect(id)}
+              className={`w-full text-left flex items-center space-x-4 p-5 rounded-xl border-2 transition ${
+                isSelected
+                  ? "border-blue-500 bg-blue-50 shadow"
+                  : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+              }`}
+              aria-pressed={isSelected}
+            >
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                <Icon className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-gray-900">{label}</div>
+                <div className="text-xs text-gray-600">{desc}</div>
+              </div>
+              <div
+                className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${isSelected ? "border-blue-500 bg-blue-500" : "border-gray-300"}`}
+              >
+                {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function ModernRoleSelection() {
-  const [selectedRole, setSelectedRole] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const router = useRouter()
+  const [role, setRole] = useState<RoleDef["id"] | "">("")
+  const [subrole, setSubrole] = useState<Subrole | "">("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const formRef = useRef<HTMLFormElement>(null)
 
+  // Restore preselected values from query (e.g., after redirect from /auth)
   useEffect(() => {
-    const preselectedRole = searchParams.get("role")
-    if (preselectedRole && roles.find((role) => role.id === preselectedRole)) {
-      setSelectedRole(preselectedRole)
-    }
-  }, [searchParams])
+    const r = searchParams.get("role")
+    const s = searchParams.get("subrole") as Subrole | null
+    const err = searchParams.get("error")
+    if (err) toast({ title: "Error", description: err, variant: "destructive" })
+    if (r && baseRoles.find((x) => x.id === r)) setRole(r as RoleDef["id"])
+    if (s === "receiver" || s === "sender") setSubrole(s)
+  }, [searchParams, toast])
 
-  // Check authentication status on component mount
+  // Normalize single-subrole roles
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession()
-        
-        console.log("Session check:", { 
-          session: session?.user?.id, 
-          error,
-          expires_at: session?.expires_at 
-        })
+    if (role === "employee") setSubrole("receiver")
+    if (role === "employer") setSubrole("sender")
+  }, [role])
 
-        if (error || !session) {
-          console.error("No valid session found:", error)
-          toast({
-            title: "Authentication Required",
-            description: "Please sign in to continue",
-            variant: "destructive",
-          })
-          router.push("/auth")
-          return
-        }
-
-        // Session is valid, continue with role selection
-        setIsCheckingAuth(false)
-      } catch (error) {
-        console.error("Auth check error:", error)
-        router.push("/auth")
-      }
-    }
-
-    checkAuth()
-  }, [router, toast])
-
-  // Handle role selection directly
-  const handleRoleClick = (roleId: string) => {
-    setSelectedRole(roleId)
-    console.log("Role selected:", roleId) // Debug log
-  }
-
-  const handleRoleSelection = async () => {
-    if (!selectedRole) {
-      toast({
-        title: "Error",
-        description: "Please select a role to continue",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      // Use getSession instead of getUser for better session handling
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-      console.log("Session check for role update:", { 
-        session: session?.user?.id, 
-        sessionError,
-        expires_at: session?.expires_at 
-      })
-
-      if (sessionError || !session || !session.user) {
-        console.error("Session error:", sessionError)
-        toast({
-          title: "Session Expired",
-          description: "Please sign in again to continue",
-          variant: "destructive",
-        })
-        router.push("/auth")
-        return
-      }
-
-      const user = session.user
-
-      // First, check if profile exists
-      const { data: existingProfile, error: fetchError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single()
-
-      console.log("Existing profile:", { existingProfile, fetchError })
-
-      let profileError = null;
-
-      if (fetchError && fetchError.code === 'PGRST116') {
-        // Profile doesn't exist, create it
-        console.log("Creating new profile...")
-        const { error: insertError } = await supabase
-          .from("profiles")
-          .insert({
-            id: user.id,
-            full_name: user.user_metadata?.full_name || null,
-            avatar_url: user.user_metadata?.avatar_url || null,
-            role: selectedRole,
-            user_type: selectedRole,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-        
-        profileError = insertError;
-      } else if (!fetchError) {
-        // Profile exists, update it
-        console.log("Updating existing profile...")
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({
-            role: selectedRole,
-            user_type: selectedRole,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", user.id)
-        
-        profileError = updateError;
-      } else {
-        // Other fetch error
-        profileError = fetchError;
-      }
-
-      console.log("Profile operation result:", { profileError })
-
-      if (profileError) {
-        console.error("Profile operation error:", profileError)
-        throw profileError
-      }
-
-      // Show success toast
-      toast({
-        title: "Success!",
-        description: "Your role has been set successfully.",
-      })
-
-      // Wait a bit longer to ensure database operation is complete
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Redirect based on role with window.location for more reliable navigation
-      console.log("Redirecting to role:", selectedRole)
-      
-      let redirectPath = "/dashboard"
-      
-      switch (selectedRole) {
-        case "freelancer":
-          redirectPath = "/profile/complete"
-          break
-        case "contractor":
-          redirectPath = "/payroll/contractor"
-          break
-        case "employer":
-          redirectPath = "/payroll/employer"
-          break
-        case "dao":
-          redirectPath = "/payroll/dao"
-          break
-        case "employee":
-          redirectPath = "/payroll/employee"
-          break
-        default:
-          redirectPath = "/dashboard"
-      }
-
-      // Use window.location.href for more reliable navigation
-      // This ensures the page actually navigates instead of potentially being blocked
-      console.log("Navigating to:", redirectPath)
-      window.location.href = redirectPath
-
-    } catch (error: any) {
-      console.error("Role selection error:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to set role. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const canSubmit = !!role && (role === "employee" || role === "employer" ? true : !!subrole)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse" />
       </div>
 
       <div className="relative z-10 w-full max-w-2xl">
-        {/* Show loading spinner while checking auth */}
-        {isCheckingAuth ? (
-          <Card className="backdrop-blur-sm bg-white/90 border-0 shadow-2xl">
-            <CardContent className="flex items-center justify-center p-12">
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
-                <p className="text-gray-600">Checking authentication...</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="backdrop-blur-sm bg-white/90 border-0 shadow-2xl">
-            <CardHeader className="text-center pb-8">
-              <CardTitle className="text-3xl font-bold">Choose Your Role</CardTitle>
-              <CardDescription className="text-lg">
-                Select how you'll be using LeoPay to get started with the right features
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Role Selection - Simplified approach */}
-              <div className="space-y-4">
-                {roles.map((role) => {
-                  const Icon = role.icon
-                  const isSelected = selectedRole === role.id
-                  
-                  return (
+        <Card className="backdrop-blur-sm bg-white/90 border-0 shadow-2xl">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-3xl font-bold">Choose Your Role</CardTitle>
+            <CardDescription className="text-lg">Role selection → Subrole choice (Receiver / Sender)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              {baseRoles.map(({ id, title, description, icon: Icon, color }) => {
+                const isSelected = role === id
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setRole(id)
+                      setSubrole("") // reset subrole on role change
+                    }}
+                    className={`w-full text-left flex items-center space-x-4 p-6 rounded-2xl border-2 transition ${
+                      isSelected
+                        ? "border-blue-500 bg-blue-50 shadow-lg"
+                        : "border-gray-200 hover:border-blue-300 hover:shadow-md hover:bg-gray-50"
+                    }`}
+                    aria-pressed={isSelected}
+                  >
                     <div
-                      key={role.id}
-                      onClick={() => handleRoleClick(role.id)}
-                      className={`
-                        flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200
-                        ${isSelected 
-                          ? 'border-blue-500 bg-blue-50 shadow-lg' 
-                          : 'border-gray-200 hover:border-blue-300 hover:shadow-md hover:bg-gray-50'
-                        }
-                      `}
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-r ${color} flex items-center justify-center flex-shrink-0`}
                     >
-                      <div
-                        className={`w-12 h-12 rounded-xl bg-gradient-to-r ${role.color} flex items-center justify-center flex-shrink-0`}
-                      >
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">{role.title}</h3>
-                        <p className="text-sm text-gray-600">{role.description}</p>
-                      </div>
-                      <div className={`
-                        w-5 h-5 border-2 rounded-full flex items-center justify-center transition-all
-                        ${isSelected 
-                          ? 'border-blue-500 bg-blue-500' 
-                          : 'border-gray-300'
-                        }
-                      `}>
-                        {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
-                      </div>
+                      <Icon className="h-6 w-6 text-white" />
                     </div>
-                  )
-                })}
-              </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                      <p className="text-sm text-gray-600">{description}</p>
+                    </div>
+                    <div
+                      className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${isSelected ? "border-blue-500 bg-blue-500" : "border-gray-300"}`}
+                    >
+                      {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
 
-              {/* Debug info - remove in production */}
-              {selectedRole && (
-                <div className="text-sm text-gray-500 text-center">
-                  Selected: {selectedRole}
-                </div>
-              )}
+            {role && <SubrolePicker role={role} selected={subrole} onSelect={(v) => setSubrole(v)} />}
 
+            <form
+              ref={formRef}
+              action={setRoleAndSubrole}
+              onSubmit={(e) => {
+                if (!canSubmit) {
+                  e.preventDefault()
+                  toast({
+                    title: "Missing selection",
+                    description: !role ? "Please select a role." : "Please choose a subrole.",
+                    variant: "destructive",
+                  })
+                  return
+                }
+                setIsSubmitting(true)
+              }}
+              className="space-y-2"
+            >
+              <input type="hidden" name="role" value={role} />
+              <input type="hidden" name="subrole" value={subrole} />
               <Button
-                onClick={handleRoleSelection}
-                disabled={!selectedRole || isLoading}
+                type="submit"
+                disabled={!canSubmit || isSubmitting}
                 className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold rounded-2xl"
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Setting up your account...
+                    Saving...
                   </>
                 ) : (
                   <>
@@ -331,9 +260,9 @@ export function ModernRoleSelection() {
                   </>
                 )}
               </Button>
-            </CardContent>
-          </Card>
-        )}
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

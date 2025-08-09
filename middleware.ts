@@ -1,11 +1,26 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
+function mapDashboardPath(role?: string | null, subrole?: string | null) {
+  switch (role) {
+    case "freelancer":
+      return subrole === "sender" ? "/dashboard/freelancer/sender" : "/dashboard/freelancer/receiver"
+    case "contractor":
+      return subrole === "sender" ? "/dashboard/contractor/sender" : "/dashboard/contractor/receiver"
+    case "employee":
+      return "/dashboard/employee/receiver"
+    case "employer":
+      return "/dashboard/employer/sender"
+    case "dao":
+      return subrole === "sender" ? "/dashboard/dao/admin" : "/dashboard/dao/contributor"
+    default:
+      return "/dashboard"
+  }
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   })
 
   const supabase = createServerClient(
@@ -17,38 +32,14 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: any) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          request.cookies.set({ name, value, ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: any) {
-          request.cookies.set({
-            name,
-            value: "",
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: "",
-            ...options,
-          })
+          request.cookies.set({ name, value: "", ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value: "", ...options })
         },
       },
     },
@@ -59,56 +50,59 @@ export async function middleware(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    // Public routes that don't require authentication
-    const publicRoutes = ["/", "/auth"]
-    const isPublicRoute = publicRoutes.some(
-      (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route),
-    )
+    const pathname = request.nextUrl.pathname
+    const isOnboarding = pathname.startsWith("/onboarding")
+    const isAuth = pathname === "/auth"
+    const isPublic = isOnboarding || isAuth || pathname === "/"
 
-    // If user is not authenticated and trying to access protected route
-    if (!user && !isPublicRoute) {
-      return NextResponse.redirect(new URL("/auth", request.url))
+    // Unauthenticated access to protected routes → /auth (preserve next)
+    if (!user && !isPublic) {
+      const redirectUrl = new URL("/auth", request.url)
+      redirectUrl.searchParams.set("next", pathname + request.nextUrl.search)
+      return NextResponse.redirect(redirectUrl)
     }
 
-    // If user is authenticated
     if (user) {
-      // Check if user has completed onboarding
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, kyc_verified, profile_completed")
+        .select("role, subrole, profile_completed, kyc_verified")
         .eq("id", user.id)
-        .single()
+        .maybeSingle()
 
-      // If user is on auth page and authenticated, redirect based on profile
-      if (request.nextUrl.pathname === "/auth") {
-        if (profile?.role) {
-          // Check if freelancer needs to complete profile/KYC
-          if (profile.role === "freelancer" && (!profile.profile_completed || !profile.kyc_verified)) {
-            return NextResponse.redirect(new URL("/profile/complete", request.url))
-          }
-          return NextResponse.redirect(new URL("/dashboard", request.url))
-        } else {
+      // If authenticated user visits /auth, route them away
+      if (isAuth) {
+        if (!profile?.role) {
           return NextResponse.redirect(new URL("/onboarding/role-selection", request.url))
         }
+        if (
+          profile.role === "freelancer" &&
+          profile.subrole === "receiver" &&
+          (!profile.profile_completed || !profile.kyc_verified)
+        ) {
+          return NextResponse.redirect(new URL("/profile/complete", request.url))
+        }
+        return NextResponse.redirect(new URL(mapDashboardPath(profile.role, profile.subrole), request.url))
       }
 
-      // If user hasn't completed onboarding and not on onboarding page
-      if (!profile?.role && !request.nextUrl.pathname.startsWith("/onboarding")) {
+      // If no role and not on onboarding, force onboarding
+      if (!profile?.role && !isOnboarding) {
         return NextResponse.redirect(new URL("/onboarding/role-selection", request.url))
       }
 
-      // If freelancer hasn't completed profile/KYC and not on profile completion page
+      // Enforce KYC only for freelancer receiver
       if (
         profile?.role === "freelancer" &&
+        profile?.subrole === "receiver" &&
         (!profile.profile_completed || !profile.kyc_verified) &&
-        !request.nextUrl.pathname.startsWith("/profile/complete")
+        !pathname.startsWith("/profile/complete") &&
+        !isOnboarding
       ) {
         return NextResponse.redirect(new URL("/profile/complete", request.url))
       }
     }
-  } catch (error) {
-    console.error("Middleware error:", error)
-    // On error, allow the request to continue
+  } catch (e) {
+    // Allow request to continue on error
+    console.error("Middleware error:", e)
   }
 
   return response

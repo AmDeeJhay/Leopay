@@ -1,34 +1,49 @@
--- This script ensures the profiles table exists with proper structure
--- Run this if you need to recreate or modify the profiles table
-
--- Drop existing table if needed (be careful with this in production)
--- DROP TABLE IF EXISTS profiles CASCADE;
-
--- Create profiles table with all necessary columns
+-- Create profiles table
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT,
+  bio TEXT,
+  location TEXT,
+  skills TEXT[],
+  hourly_rate DECIMAL(10,2),
+  experience_level TEXT CHECK (experience_level IN ('entry', 'intermediate', 'senior', 'expert')),
+  portfolio_url TEXT,
+  linkedin_url TEXT,
+  github_url TEXT,
+  role TEXT CHECK (role IN ('freelancer', 'contractor', 'employer', 'dao', 'employee')),
+  user_type TEXT,
+  profile_completed BOOLEAN DEFAULT FALSE,
+  kyc_verified BOOLEAN DEFAULT FALSE,
   avatar_url TEXT,
-  user_type TEXT CHECK (user_type IN ('freelancer', 'contractor', 'employer', 'dao', 'employee')),
-  role TEXT CHECK (role IN ('freelancer', 'employee')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  phone_number TEXT,
+  document_type TEXT,
+  document_number TEXT,
+  address TEXT,
+  city TEXT,
+  country TEXT,
+  postal_code TEXT,
+  kyc_submitted_at TIMESTAMPTZ,
+  total_earnings DECIMAL(10,2) DEFAULT 0,
+  projects_completed INTEGER DEFAULT 0,
+  client_rating DECIMAL(3,2) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Enable RLS
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
-DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
-DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
+-- Create policies
+CREATE POLICY "Users can view own profile" ON profiles
+  FOR SELECT USING (auth.uid() = id);
 
--- Create RLS policies
-CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Create or replace the updated_at trigger function
+CREATE POLICY "Users can update own profile" ON profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+-- Create function to handle updated_at
 CREATE OR REPLACE FUNCTION handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -37,29 +52,28 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Drop existing trigger if it exists
-DROP TRIGGER IF EXISTS profiles_updated_at ON profiles;
-
 -- Create trigger for updated_at
-CREATE TRIGGER profiles_updated_at 
-  BEFORE UPDATE ON profiles 
-  FOR EACH ROW 
+CREATE TRIGGER profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
   EXECUTE FUNCTION handle_updated_at();
 
--- Create function to automatically create profile on user signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
+-- Create function to handle new user profile creation
+CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, avatar_url)
-  VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'avatar_url');
+  INSERT INTO profiles (id, full_name, avatar_url)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'avatar_url'
+  );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Drop existing trigger if it exists
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-
--- Create trigger to automatically create profile on user signup
+-- Create trigger for new user profile creation
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_new_user();
