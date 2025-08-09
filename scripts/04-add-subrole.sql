@@ -15,5 +15,11 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS kyc_verified boolean DEFAULT false,
   ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 
+-- Update existing profiles to have default subroles based on role
+UPDATE profiles SET subrole = 'receiver' WHERE role = 'employee' AND subrole IS NULL;
+UPDATE profiles SET subrole = 'sender' WHERE role = 'employer' AND subrole IS NULL;
+
 -- Optional helpful index
 CREATE INDEX IF NOT EXISTS idx_profiles_role_subrole ON profiles(role, subrole);
+
+-- Note: This SQL is for reference only. The application now uses mock data.

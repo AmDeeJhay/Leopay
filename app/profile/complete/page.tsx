@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,33 +11,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { FileText, CheckCircle, Loader2, User, ShieldCheck } from "lucide-react"
-import { getSupabaseBrowser } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { completeFreelancerProfile, type CompleteProfileResult } from "./actions"
 import { useActionState } from "react"
-import { completeFreelancerKyc, completeKyc } from "./actions"
-
-interface ProfileData {
-  full_name: string
-  bio: string
-  location: string
-  skills: string[]
-  hourly_rate: string
-  experience_level: string
-  portfolio_url: string
-  linkedin_url: string
-  github_url: string
-}
-
-interface KYCData {
-  document_type: string
-  document_number: string
-  phone_number: string
-  address: string
-  city: string
-  country: string
-  postal_code: string
-}
+import { completeFreelancerProfile, type CompleteProfileResult, completeKyc } from "./actions"
+import { useSession } from "@/components/providers/session-provider"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 
 const skillOptions = [
   "JavaScript",
@@ -68,116 +47,73 @@ const experienceLevels = [
 ]
 
 export default function ProfileCompletePage() {
-  const supabase = getSupabaseBrowser()
   const router = useRouter()
+  const search = useSearchParams()
   const { toast } = useToast()
-  const [loading, setLoading] = useState(true)
-  const [fullName, setFullName] = useState("")
-  const [phone, setPhone] = useState("")
+  const { user, profile, updateProfile, completeKycAndProfile, getDashboardPath } = useSession()
+  const [currentStep, setCurrentStep] = useState(search.get("step") === "kyc" ? 2 : 1)
+  const [profileData, setProfileData] = useState({
+    full_name: profile?.full_name || "",
+    bio: profile?.bio || "",
+    location: profile?.location || "",
+    skills: profile?.skills || ([] as string[]),
+    hourly_rate: profile?.hourly_rate?.toString() || "",
+    experience_level: profile?.experience_level || "",
+    portfolio_url: profile?.portfolio_url || "",
+    linkedin_url: profile?.linkedin_url || "",
+    github_url: profile?.github_url || "",
+  })
   const [submitting, setSubmitting] = useState(false)
-  const [currentStep, setCurrentStep] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [profileData, setProfileData] = useState<ProfileData>({
-    full_name: "",
-    bio: "",
-    location: "",
-    skills: [],
-    hourly_rate: "",
-    experience_level: "",
-    portfolio_url: "",
-    linkedin_url: "",
-    github_url: "",
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [state, action, pending] = useActionState<CompleteProfileResult, FormData>(completeFreelancerProfile, {
+    ok: false,
   })
-
-  const [kycData, setKycData] = useState<KYCData>({
-    document_type: "",
-    document_number: "",
-    phone_number: "",
-    address: "",
-    city: "",
-    country: "",
-    postal_code: "",
-  })
-
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
-  const [profileState, profileFormAction, profilePending] = useActionState<CompleteProfileResult, FormData>(
-    completeFreelancerProfile,
-    { ok: false },
-  )
-  const [kycState, kycFormAction, kycPending] = useActionState(completeFreelancerKyc, null)
-  const [state, formAction, pending] = useActionState(completeKyc, { ok: false, message: "" })
 
   useEffect(() => {
+    if (!user) router.replace("/auth")
+  }, [user, router])
+
+  useEffect(() => {
+    // Prefill from existing profile
     ;(async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        router.push("/auth?next=/profile/complete")
-        return
+      try {
+        const res = await fetch("/api/profile", { cache: "no-store" })
+        if (!res.ok) {
+          router.push("/auth?next=/profile/complete")
+          return
+        }
+        const { profile } = await res.json()
+        if (profile) {
+          setProfileData({
+            full_name: profile.full_name || "",
+            bio: profile.bio || "",
+            location: profile.location || "",
+            skills: profile.skills || [],
+            hourly_rate: profile.hourly_rate?.toString() || "",
+            experience_level: profile.experience_level || "",
+            portfolio_url: profile.portfolio_url || "",
+            linkedin_url: profile.linkedin_url || "",
+            github_url: profile.github_url || "",
+          })
+          if (profile.profile_completed && !profile.kyc_verified) setCurrentStep(2)
+          if (profile.profile_completed && profile.kyc_verified) router.push("/dashboard")
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error)
       }
-      setUser(user)
-      setLoading(false)
     })()
-  }, [router, supabase])
+  }, [router])
 
   useEffect(() => {
-    if (profileState?.ok && profileState.next) {
+    if (state?.ok && state.next) {
       setCurrentStep(2)
-    } else if (!profileState?.ok && profileState?.error === "NOT_AUTHENTICATED") {
+    } else if (!state?.ok && state?.error === "MISSING_FIELDS") {
+      toast({ title: "Missing information", description: "Please fill required fields", variant: "destructive" })
+    } else if (!state?.ok && state?.error === "NOT_AUTHENTICATED") {
       router.push("/auth?next=/profile/complete")
     }
-  }, [profileState, router])
-
-  const checkUserAndLoadProfile = async () => {
-    try {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser()
-
-      if (error || !user) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to complete your profile",
-          variant: "destructive",
-        })
-        router.push("/auth")
-        return
-      }
-
-      setUser(user)
-
-      // Load existing profile data if any
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-
-      if (profile) {
-        setProfileData({
-          full_name: profile.full_name || user.user_metadata?.full_name || "",
-          bio: profile.bio || "",
-          location: profile.location || "",
-          skills: profile.skills || [],
-          hourly_rate: profile.hourly_rate?.toString() || "",
-          experience_level: profile.experience_level || "",
-          portfolio_url: profile.portfolio_url || "",
-          linkedin_url: profile.linkedin_url || "",
-          github_url: profile.github_url || "",
-        })
-
-        if (profile.profile_completed) {
-          setCurrentStep(2)
-        }
-      }
-    } catch (error) {
-      console.error("Error loading profile:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load profile data",
-        variant: "destructive",
-      })
-    }
-  }
+  }, [state, toast, router])
 
   const handleSkillToggle = (skill: string) => {
     setProfileData((prev) => ({
@@ -186,133 +122,54 @@ export default function ProfileCompletePage() {
     }))
   }
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!profileData.full_name || !profileData.bio || profileData.skills.length === 0) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          ...profileData,
-          hourly_rate: profileData.hourly_rate ? Number.parseFloat(profileData.hourly_rate) : null,
-          profile_completed: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id)
-
-      if (error) throw error
-
-      toast({
-        title: "Profile updated!",
-        description: "Your profile has been saved successfully",
-      })
-
-      setCurrentStep(2)
-    } catch (error: any) {
-      console.error("Profile update error:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update profile",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+  const saveProfile = () => {
+    setError(null)
+    updateProfile({
+      full_name: profileData.full_name || profile?.full_name || null,
+      location: profileData.location || profile?.location || null,
+    })
   }
 
-  const handleKYCSubmit = async (e: React.FormEvent) => {
+  const submitProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-
-    if (!kycData.document_type || !kycData.document_number || !kycData.phone_number || !agreedToTerms) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields and agree to terms",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          ...kycData,
-          kyc_verified: true,
-          kyc_submitted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id)
-
-      if (error) throw error
-
-      toast({
-        title: "KYC verification complete!",
-        description: "Your account has been verified successfully",
-      })
-
-      // Redirect to dashboard after successful completion
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 2000)
-    } catch (error: any) {
-      console.error("KYC update error:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to complete KYC verification",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+    const fd = new FormData(e.currentTarget)
+    fd.set("skills", profileData.skills.join(","))
+    await action(fd)
   }
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const submitKYC = async () => {
     setSubmitting(true)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      router.push("/auth?next=/profile/complete")
-      return
-    }
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        full_name: fullName || null,
-        phone_number: phone || null,
-        profile_completed: true,
-        kyc_verified: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id)
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+    try {
+      const res = await completeKyc({ ok: false, message: "" } as any, new FormData())
       setSubmitting(false)
-      return
+      if (res.ok) {
+        toast({ title: "KYC verification complete!", description: "Your account has been verified successfully" })
+        router.push("/dashboard")
+      } else {
+        toast({ title: "Error", description: res.message || "Failed to verify", variant: "destructive" })
+      }
+    } catch (error) {
+      setSubmitting(false)
+      // completeKyc redirects on success, so we only get here on error
+      toast({ title: "Error", description: "Failed to complete verification", variant: "destructive" })
     }
-    toast({ title: "Verified!", description: "Your profile is now verified." })
-    router.push("/dashboard/freelancer/receiver")
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-      </div>
-    )
+  const completeAll = async () => {
+    try {
+      setSaving(true)
+      if (!profileData.skills.length || !profileData.full_name || !profileData.bio) {
+        setError("Please fill required fields.")
+        return
+      }
+      saveProfile()
+      const res = await completeKycAndProfile()
+      if (res.ok) {
+        router.push(res.next || getDashboardPath(profile?.role, profile?.subrole || null))
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -323,7 +180,9 @@ export default function ProfileCompletePage() {
           <div className="flex items-center justify-center space-x-4">
             <div className={`flex items-center space-x-2 ${currentStep >= 1 ? "text-blue-600" : "text-gray-400"}`}>
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  currentStep >= 1 ? "bg-blue-600 text-white" : "bg-gray-200"
+                }`}
               >
                 {currentStep > 1 ? <CheckCircle className="w-5 h-5" /> : <User className="w-4 h-4" />}
               </div>
@@ -332,7 +191,9 @@ export default function ProfileCompletePage() {
             <div className={`w-16 h-1 ${currentStep >= 2 ? "bg-blue-600" : "bg-gray-200"} rounded`} />
             <div className={`flex items-center space-x-2 ${currentStep >= 2 ? "text-blue-600" : "text-gray-400"}`}>
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  currentStep >= 2 ? "bg-blue-600 text-white" : "bg-gray-200"
+                }`}
               >
                 <FileText className="w-4 h-4" />
               </div>
@@ -348,14 +209,15 @@ export default function ProfileCompletePage() {
               <CardDescription>Tell us about yourself to get started as a freelancer</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleProfileSubmit} className="space-y-6">
+              <form onSubmit={submitProfile} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="full_name">Full Name *</Label>
                     <Input
                       id="full_name"
+                      name="full_name"
                       value={profileData.full_name}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, full_name: e.target.value }))}
+                      onChange={(e) => setProfileData((p) => ({ ...p, full_name: e.target.value }))}
                       placeholder="Your full name"
                       required
                     />
@@ -364,8 +226,9 @@ export default function ProfileCompletePage() {
                     <Label htmlFor="location">Location</Label>
                     <Input
                       id="location"
+                      name="location"
                       value={profileData.location}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, location: e.target.value }))}
+                      onChange={(e) => setProfileData((p) => ({ ...p, location: e.target.value }))}
                       placeholder="City, Country"
                     />
                   </div>
@@ -375,8 +238,9 @@ export default function ProfileCompletePage() {
                   <Label htmlFor="bio">Bio *</Label>
                   <Textarea
                     id="bio"
+                    name="bio"
                     value={profileData.bio}
-                    onChange={(e) => setProfileData((prev) => ({ ...prev, bio: e.target.value }))}
+                    onChange={(e) => setProfileData((p) => ({ ...p, bio: e.target.value }))}
                     placeholder="Tell us about your experience and what you do..."
                     rows={4}
                     required
@@ -405,18 +269,20 @@ export default function ProfileCompletePage() {
                     <Label htmlFor="hourly_rate">Hourly Rate (USD)</Label>
                     <Input
                       id="hourly_rate"
+                      name="hourly_rate"
                       type="number"
                       value={profileData.hourly_rate}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, hourly_rate: e.target.value }))}
+                      onChange={(e) => setProfileData((p) => ({ ...p, hourly_rate: e.target.value }))}
                       placeholder="50"
-                      min="1"
+                      min={1}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="experience_level">Experience Level</Label>
                     <Select
                       value={profileData.experience_level}
-                      onValueChange={(value) => setProfileData((prev) => ({ ...prev, experience_level: value }))}
+                      onValueChange={(value) => setProfileData((p) => ({ ...p, experience_level: value }))}
+                      name="experience_level"
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select experience level" />
@@ -436,20 +302,23 @@ export default function ProfileCompletePage() {
                   <Label>Portfolio & Social Links</Label>
                   <div className="space-y-3">
                     <Input
+                      name="portfolio_url"
                       value={profileData.portfolio_url}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, portfolio_url: e.target.value }))}
+                      onChange={(e) => setProfileData((p) => ({ ...p, portfolio_url: e.target.value }))}
                       placeholder="Portfolio URL"
                       type="url"
                     />
                     <Input
+                      name="linkedin_url"
                       value={profileData.linkedin_url}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, linkedin_url: e.target.value }))}
+                      onChange={(e) => setProfileData((p) => ({ ...p, linkedin_url: e.target.value }))}
                       placeholder="LinkedIn URL"
                       type="url"
                     />
                     <Input
+                      name="github_url"
                       value={profileData.github_url}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, github_url: e.target.value }))}
+                      onChange={(e) => setProfileData((p) => ({ ...p, github_url: e.target.value }))}
                       placeholder="GitHub URL"
                       type="url"
                     />
@@ -458,10 +327,10 @@ export default function ProfileCompletePage() {
 
                 <Button
                   type="submit"
-                  disabled={isLoading || !profileData.full_name || !profileData.bio || profileData.skills.length === 0}
+                  disabled={pending || !profileData.full_name || !profileData.bio || profileData.skills.length < 1}
                   className="w-full"
                 >
-                  {isLoading ? (
+                  {pending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Saving Profile...
@@ -482,6 +351,13 @@ export default function ProfileCompletePage() {
               <CardDescription>Complete your identity verification to start receiving payments</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTitle>{"Action Required"}</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
               <div className="flex items-start space-x-3 text-sm text-gray-700">
                 <ShieldCheck className="h-5 w-5 text-green-600 mt-0.5" />
                 <p>
@@ -489,19 +365,22 @@ export default function ProfileCompletePage() {
                 </p>
               </div>
 
-              {/* Minimal placeholder form; extend with actual fields later */}
-              <form action={formAction} className="space-y-4">
-                <Button type="submit" className="w-full h-12" disabled={pending}>
-                  {pending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...
-                    </>
-                  ) : (
-                    "Submit and verify"
-                  )}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="kyc"
+                  checked={profileData.skills.length >= 3}
+                  onCheckedChange={(v) =>
+                    setProfileData((p) => ({ ...p, skills: v ? [...p.skills, ""] : p.skills.slice(0, -1) }))
+                  }
+                />
+                <Label htmlFor="kyc">I have completed KYC verification.</Label>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={completeAll} disabled={saving}>
+                  {saving ? "Finishing..." : "Finish"}
                 </Button>
-                {state?.message && <p className="text-sm text-red-600">{state.message}</p>}
-              </form>
+              </div>
             </CardContent>
           </Card>
         )}

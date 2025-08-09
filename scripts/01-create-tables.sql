@@ -3,23 +3,25 @@ ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret';
 
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS profiles (
-  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  email TEXT,
+  id UUID PRIMARY KEY,
+  email TEXT NOT NULL,
   full_name TEXT,
-  avatar_url TEXT,
-  role TEXT CHECK (role IN ('freelancer', 'contractor', 'employer', 'dao', 'employee')),
-  phone TEXT,
   bio TEXT,
-  skills TEXT[],
-  experience_level TEXT CHECK (experience_level IN ('beginner', 'intermediate', 'expert')),
-  hourly_rate DECIMAL(10,2),
   location TEXT,
-  website TEXT,
-  linkedin TEXT,
-  github TEXT,
+  skills TEXT[],
+  hourly_rate DECIMAL,
+  experience_level TEXT,
   portfolio_url TEXT,
+  linkedin_url TEXT,
+  github_url TEXT,
+  phone_number TEXT,
+  role TEXT,
+  subrole TEXT,
   kyc_verified BOOLEAN DEFAULT FALSE,
   profile_completed BOOLEAN DEFAULT FALSE,
+  total_earnings DECIMAL DEFAULT 0,
+  projects_completed INTEGER DEFAULT 0,
+  client_rating DECIMAL DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -135,3 +137,5 @@ CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
 
 CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Note: This SQL is for reference only. The application now uses mock data.
