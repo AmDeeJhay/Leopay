@@ -1,23 +1,27 @@
 import type React from "react"
-import "@/app/globals.css"
-import { Inter } from "next/font/google"
+import type { Metadata } from "next"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
+import "./globals.css"
 import { SessionProvider } from "@/components/providers/session-provider"
 
-const inter = Inter({ subsets: ["latin"] })
+export const metadata: Metadata = {
+  title: "LeoPay",
+  description: "Smooth client-only auth with mock data",
+    generator: 'v0.dev'
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <SessionProvider>{children}</SessionProvider>
+      <body>
+        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
+          <SessionProvider>
+            {children}
+            <Toaster />
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>
   )
 }
-
-export const metadata = {
-      generator: 'v0.dev'
-    };

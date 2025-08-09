@@ -1,8 +1,8 @@
 "use client"
 
-import React from "react"
-import type { UserRole } from "@/lib/types"
+import * as React from "react"
 import { useRouter } from "next/navigation"
+import type { UserRole } from "@/lib/types"
 
 type Subrole = "receiver" | "sender"
 
@@ -40,6 +40,7 @@ type MockProfile = {
 }
 
 type SessionState = {
+  ready: boolean
   user: MockUser | null
   profile: MockProfile | null
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; next?: string }>
@@ -191,6 +192,7 @@ function getDashboardPath(role?: UserRole | null, subrole?: Subrole | null) {
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const [ready, setReady] = React.useState(false)
   const [users, setUsers] = React.useState<MockUser[]>([])
   const [profiles, setProfiles] = React.useState<MockProfile[]>([])
   const [userId, setUserId] = React.useState<string | null>(null)
@@ -204,6 +206,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setUsers(u ? JSON.parse(u) : [])
     setProfiles(p ? JSON.parse(p) : [])
     setUserId(s || null)
+    setReady(true)
   }, [])
 
   const persist = React.useCallback((nextUsers: MockUser[], nextProfiles: MockProfile[]) => {
@@ -224,7 +227,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (!user) return { ok: false, error: "Invalid email or password" }
       setUserId(user.id)
       if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, user.id)
-      // route next
+      // decide next path
       const profile = profiles.find((p) => p.id === user.id) || null
       if (!profile?.role) return { ok: true, next: "/onboarding/role-selection" }
       if (
@@ -294,7 +297,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const idx = profiles.findIndex((p) => p.id === userId)
       if (idx === -1) return { ok: false, next: "/auth" }
 
-      // normalize
+      // normalize fixed subroles for roles without choice
       let finalSubrole: Subrole | null = subrole
       if (role === "employee") finalSubrole = "receiver"
       if (role === "employer") finalSubrole = "sender"
@@ -350,6 +353,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [userId, profiles, users, persist])
 
   const value: SessionState = {
+    ready,
     user: currentUser,
     profile: currentProfile,
     login,

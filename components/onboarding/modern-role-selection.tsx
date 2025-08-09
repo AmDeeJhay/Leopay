@@ -2,107 +2,126 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
-import type { UserRole } from "@/lib/types"
+import { Badge } from "@/components/ui/badge"
 import { useSession } from "@/components/providers/session-provider"
+import { Briefcase, Users, Building2, Landmark, UserCog, ArrowRight } from "lucide-react"
 
-const ROLES: { value: UserRole; label: string; description: string }[] = [
-  { value: "freelancer", label: "Freelancer", description: "Get paid for your work easily." },
-  { value: "contractor", label: "Contractor", description: "Send invoices and manage payouts." },
-  { value: "employee", label: "Employee", description: "Receive your salaries on time." },
-  { value: "employer", label: "Employer", description: "Pay your employees quickly." },
-  { value: "dao", label: "DAO", description: "Manage contributors and payouts." },
+type RoleKey = "freelancer" | "contractor" | "employee" | "employer" | "dao"
+type Subrole = "sender" | "receiver" | null
+
+const roles: { key: RoleKey; title: string; desc: string; icon: any; subroles?: Subrole[] }[] = [
+  {
+    key: "freelancer",
+    title: "Freelancer",
+    desc: "Send or receive payments as an independent worker.",
+    icon: Briefcase,
+    subroles: ["sender", "receiver"],
+  },
+  {
+    key: "contractor",
+    title: "Contractor",
+    desc: "Operate as a contractor for businesses.",
+    icon: UserCog,
+    subroles: ["sender", "receiver"],
+  },
+  {
+    key: "employee",
+    title: "Employee",
+    desc: "Receive salaries and reimbursements.",
+    icon: Users,
+    subroles: ["receiver"],
+  },
+  {
+    key: "employer",
+    title: "Employer",
+    desc: "Send salaries, bonuses, and reimbursements.",
+    icon: Building2,
+    subroles: ["sender"],
+  },
+  {
+    key: "dao",
+    title: "DAO",
+    desc: "Manage treasury and payouts as a DAO.",
+    icon: Landmark,
+    subroles: ["sender", "receiver"],
+  },
 ]
 
-export default function ModernRoleSelection() {
+export function ModernRoleSelection() {
   const router = useRouter()
   const { setRoleAndSubrole } = useSession()
-  const [role, setRole] = React.useState<UserRole>("freelancer")
-  const [subrole, setSubrole] = React.useState<"receiver" | "sender" | null>(null)
-  const [loading, setLoading] = React.useState(false)
+  const [selectedRole, setSelectedRole] = React.useState<RoleKey | null>(null)
+  const [selectedSubrole, setSelectedSubrole] = React.useState<Subrole>(null)
+  const roleDef = roles.find((r) => r.key === selectedRole)
 
-  const showSubrole = role === "freelancer" || role === "contractor" || role === "dao"
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    const result = setRoleAndSubrole(role, subrole)
-    setLoading(false)
-    if (result.ok) {
-      router.push(result.next)
-    }
+  async function continueNext() {
+    if (!selectedRole) return
+    const sub = roleDef?.subroles?.length === 1 ? roleDef.subroles[0]! : selectedSubrole
+    const res = setRoleAndSubrole(selectedRole as any, (sub as any) ?? null)
+    if (res.ok) router.push(res.next)
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Choose your role</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <RadioGroup value={role} onValueChange={(v) => setRole(v as UserRole)} className="grid gap-3">
-              {ROLES.map((r) => (
-                <label
-                  key={r.value}
-                  className="flex cursor-pointer items-start gap-3 rounded-md border p-4 hover:bg-muted"
-                  htmlFor={`role-${r.value}`}
-                >
-                  <RadioGroupItem id={`role-${r.value}`} value={r.value} className="mt-1" />
-                  <div>
-                    <div className="font-medium">{r.label}</div>
-                    <div className="text-sm text-muted-foreground">{r.description}</div>
-                  </div>
-                </label>
-              ))}
-            </RadioGroup>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold">Choose your role</h1>
+        <p className="text-muted-foreground">Select how you plan to use LeoPay. You can change this later.</p>
+      </div>
 
-            {showSubrole && (
-              <>
-                <Separator />
-                <div className="space-y-3">
-                  <div className="font-medium">Choose subrole</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted">
-                      <input
-                        type="radio"
-                        name="subrole"
-                        value="receiver"
-                        checked={subrole === "receiver"}
-                        onChange={() => setSubrole("receiver")}
-                      />
-                      <span>Receiver</span>
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-2 rounded-md border p-3 hover:bg-muted">
-                      <input
-                        type="radio"
-                        name="subrole"
-                        value="sender"
-                        checked={subrole === "sender"}
-                        onChange={() => setSubrole("sender")}
-                      />
-                      <span>Sender</span>
-                    </label>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Employees default to Receiver; Employers default to Sender.
-                  </p>
+      <div className="grid gap-4 md:grid-cols-2">
+        {roles.map((r) => {
+          const Icon = r.icon
+          const active = selectedRole === r.key
+          return (
+            <Card
+              key={r.key}
+              className={`cursor-pointer transition ${active ? "ring-2 ring-blue-600" : ""}`}
+              onClick={() => {
+                setSelectedRole(r.key)
+                // auto pick only subrole if there's just one
+                if (r.subroles && r.subroles.length === 1) {
+                  setSelectedSubrole(r.subroles[0])
+                } else {
+                  setSelectedSubrole(null)
+                }
+              }}
+            >
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Icon className="h-6 w-6 text-blue-600" />
+                  <CardTitle>{r.title}</CardTitle>
                 </div>
-              </>
-            )}
+                <CardDescription>{r.desc}</CardDescription>
+              </CardHeader>
+              {active && r.subroles && r.subroles.length > 1 && (
+                <CardContent className="flex gap-2">
+                  {r.subroles.map((sub) => (
+                    <Badge
+                      key={sub}
+                      variant={selectedSubrole === sub ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedSubrole(sub)
+                      }}
+                    >
+                      {sub}
+                    </Badge>
+                  ))}
+                </CardContent>
+              )}
+            </Card>
+          )
+        })}
+      </div>
 
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">You can update your profile anytime in Settings.</div>
-              <Button type="submit" disabled={loading || (showSubrole && !subrole)}>
-                {loading ? "Saving..." : "Continue"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="flex justify-end">
+        <Button disabled={!selectedRole || (roleDef?.subroles?.length! > 1 && !selectedSubrole)} onClick={continueNext}>
+          Continue <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
     </div>
   )
 }

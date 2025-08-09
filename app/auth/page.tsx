@@ -9,12 +9,13 @@ export default function AuthPage() {
   const router = useRouter()
   const sp = useSearchParams()
   const next = sp.get("next") || undefined
-  const { user, profile } = useSession()
+  const { ready, user, profile, getDashboardPath } = useSession()
 
-  // If already logged in, route away based on onboarding state
+  // Only redirect after hydration and when we have a session.
   useEffect(() => {
-    if (!user) return
-    if (!profile?.role) {
+    if (!ready) return
+    if (!user || !profile) return
+    if (!profile.role) {
       router.replace("/onboarding/role-selection")
       return
     }
@@ -26,11 +27,11 @@ export default function AuthPage() {
       router.replace("/profile/complete")
       return
     }
-    router.replace(next || "/dashboard")
-  }, [user, profile, router, next])
+    router.replace(next || getDashboardPath(profile.role, profile.subrole))
+  }, [ready, user, profile, router, next, getDashboardPath])
 
   return (
-    <main className="min-h-[calc(100svh-0px)] flex items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <ModernAuthForm />
     </main>
   )
