@@ -1,4 +1,9 @@
-export type UserRole = "freelancer" | "contractor" | "employer" | "dao" | "employee"
+/**
+ * Shared app types and constants.
+ * Make sure to keep literal unions in sync with usage across the app.
+ */
+
+export type UserRole = "employee" | "freelancer"
 
 export interface UserProfile {
   id: string
@@ -59,29 +64,64 @@ export interface Transaction {
   updated_at: string
 }
 
-export type WalletStatus = "not_connected" | "connected_unverified" | "connected_active"
+// Matches usages across navbar and dashboards:
+// connected_active | connected_unverified | (fallback/disconnected)
+export type WalletStatus = "connected_active" | "connected_unverified" | "disconnected"
+
+// Sub-roles used in role-based navigation and onboarding.
+// Includes business/employer/dao/employee/contractor per usage in RoleBasedSidebar and onboarding.
+export const EMPLOYEE_TYPES = ["employer", "business", "dao", "employee", "contractor"] as const
+export type EmployeeType = (typeof EMPLOYEE_TYPES)[number]
 
 export const FREELANCER_SKILLS = [
-  "Web Development",
-  "Mobile Development",
+  "React",
+  "TypeScript",
+  "JavaScript",
+  "Node.js",
+  "Python",
+  "Solidity",
+  "Smart Contracts",
+  "Blockchain",
+  "Web3",
+  "Next.js",
+  "Vue.js",
+  "Angular",
+  "Tailwind CSS",
+  "CSS",
+  "HTML",
+  "MongoDB",
+  "PostgreSQL",
+  "MySQL",
+  "GraphQL",
+  "REST API",
+  "AWS",
+  "Docker",
+  "Kubernetes",
+  "DevOps",
   "UI/UX Design",
-  "Graphic Design",
-  "Content Writing",
-  "SEO Optimization",
-  "Digital Marketing",
-  "Video Editing",
-  "Data Entry",
-  "Virtual Assistant",
-  "Blockchain Development",
-  "Smart Contract Auditing",
-  "DeFi Consulting",
-  "NFT Art Creation",
-  "Community Management",
-  "Technical Writing",
-  "Cybersecurity",
-  "Cloud Computing",
+  "Figma",
+  "Photoshop",
+  "Illustrator",
+  "Mobile Development",
+  "React Native",
+  "Flutter",
+  "iOS",
+  "Android",
   "Machine Learning",
+  "AI",
   "Data Science",
+  "Security",
+  "Testing",
+  "QA",
 ] as const
 
-export const EXPERIENCE_LEVELS = ["beginner", "intermediate", "expert"] as const
+export type FreelancerSkill = (typeof FREELANCER_SKILLS)[number]
+
+// Minimal AuthUser shape to satisfy components expecting it
+export type AuthUser = {
+  id: string
+  email?: string | null
+  name?: string | null
+  role?: UserRole
+  subrole?: EmployeeType
+}

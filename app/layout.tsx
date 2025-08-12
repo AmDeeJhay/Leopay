@@ -8,7 +8,7 @@ import { SessionProvider } from "@/components/providers/session-provider"
 export const metadata: Metadata = {
   title: "LeoPay",
   description: "Smooth client-only auth with mock data",
-    generator: 'v0.dev'
+    generator: 'v0.app'
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

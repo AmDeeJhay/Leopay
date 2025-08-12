@@ -1,8 +1,15 @@
+"use client"
+
+import { useState } from "react"
+import type { WalletStatus } from "@/lib/types"
+import { ReceiverDashboard } from "@/components/dashboard/receiver-dashboard"
+
 export default function FreelancerReceiverDashboard() {
+  const [walletStatus, setWalletStatus] = useState<WalletStatus>("disconnected")
+
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold">Freelancer – Receiver</h1>
-      <p className="text-muted-foreground">Receive payments and explore tasks.</p>
+    <main className="min-h-screen">
+      <ReceiverDashboard walletStatus={walletStatus} setWalletStatus={setWalletStatus} />
     </main>
   )
 }
