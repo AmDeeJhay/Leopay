@@ -8,33 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { TopNavbar } from "@/components/layout/top-navbar"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Wallet,
-  Users,
-  TrendingUp,
-  Calendar,
-  Send,
-  UserPlus,
-  FileText,
-  BarChart3,
-  Settings,
-  Shield,
-  Download,
-  Upload,
-  Search,
-  Filter,
-  Zap,
-  Building2,
-} from "lucide-react"
+import { Wallet, Users, TrendingUp, Calendar, UserPlus, FileText, BarChart3, Settings, Shield, Zap } from "lucide-react"
 import {
   LineChart,
   Line,
@@ -43,8 +19,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
@@ -66,12 +40,12 @@ export const DAOAdminDashboard: React.FC<DAOAdminDashboardProps> = ({ walletStat
   const [selectedContributors, setSelectedContributors] = useState<number[]>([])
 
   const navigationItems = [
-    { id: "dashboard", label: "Dashboard", icon: TrendingUp },
-    { id: "pay", label: "Pay Contributors", icon: Send },
-    { id: "manage", label: "Manage Contributors", icon: Users },
-    { id: "treasury", label: "zkTreasury Logs", icon: FileText },
-    { id: "analytics", label: "Analytics", icon: BarChart3 },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "dashboard", label: "Dashboard Overview", icon: TrendingUp },
+    { id: "proposals", label: "Proposals", icon: FileText },
+    { id: "tasks", label: "Task Management", icon: BarChart3 },
+    { id: "treasury", label: "Treasury", icon: Shield },
+    { id: "members", label: "Members", icon: Users },
+    { id: "profile", label: "Profile", icon: Settings },
   ]
 
   const mockContributors = [
@@ -146,47 +120,47 @@ export const DAOAdminDashboard: React.FC<DAOAdminDashboardProps> = ({ walletStat
     <div className="space-y-6">
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white border-slate-200 hover:shadow-lg transition-all duration-300">
+        <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Treasury Balance</CardTitle>
+            <CardTitle className="text-sm font-medium text-indigo-700">Treasury Balance</CardTitle>
             <Wallet className="h-4 w-4 text-indigo-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">${walletState.balance.toLocaleString()}</div>
-            <p className="text-xs text-slate-500 mt-1">Available for payouts</p>
+            <div className="text-2xl font-bold text-indigo-900">${walletState.balance.toLocaleString()}</div>
+            <p className="text-xs text-indigo-600 mt-1">Available for payouts</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 hover:shadow-lg transition-all duration-300">
+        <Card className="bg-gradient-to-br from-slate-50 to-gray-50 border-slate-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Disbursed</CardTitle>
-            <TrendingUp className="h-4 w-4 text-emerald-600" />
+            <CardTitle className="text-sm font-medium text-slate-700">Total Disbursed</CardTitle>
+            <TrendingUp className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">$248,500</div>
-            <p className="text-xs text-slate-500 mt-1">This quarter</p>
+            <p className="text-xs text-slate-600 mt-1">This quarter</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 hover:shadow-lg transition-all duration-300">
+        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Contributors</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-emerald-700">Contributors</CardTitle>
+            <Users className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">24</div>
-            <p className="text-xs text-slate-500 mt-1">Active members</p>
+            <div className="text-2xl font-bold text-emerald-900">24</div>
+            <p className="text-xs text-emerald-600 mt-1">Active members</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 hover:shadow-lg transition-all duration-300">
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Next Payout</CardTitle>
-            <Calendar className="h-4 w-4 text-teal-600" />
+            <CardTitle className="text-sm font-medium text-orange-700">Next Payout</CardTitle>
+            <Calendar className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">Jan 30</div>
-            <p className="text-xs text-slate-500 mt-1">Monthly cycle</p>
+            <div className="text-2xl font-bold text-orange-900">Jan 30</div>
+            <p className="text-xs text-orange-600 mt-1">Monthly cycle</p>
           </CardContent>
         </Card>
       </div>
@@ -272,138 +246,64 @@ export const DAOAdminDashboard: React.FC<DAOAdminDashboardProps> = ({ walletStat
     </div>
   )
 
-  const renderPayContributors = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Pay Contributors</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" className="border-slate-300 bg-transparent">
-            <Upload className="h-4 w-4 mr-2" />
-            Bulk CSV Upload
-          </Button>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Single Payment</Button>
-            </DialogTrigger>
-            <DialogContent className="bg-white">
-              <DialogHeader>
-                <DialogTitle className="text-slate-900">Send zkPayment</DialogTitle>
-                <DialogDescription className="text-slate-600">
-                  Send a privacy-preserving payment to a contributor
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-slate-700">Contributor Wallet</Label>
-                  <Input placeholder="aleo1abc...def123" className="border-slate-300" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-700">Amount (USD)</Label>
-                  <Input placeholder="2500" type="number" className="border-slate-300" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-700">Project/Task Label</Label>
-                  <Input placeholder="Frontend Development" className="border-slate-300" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-700">Notes (Optional)</Label>
-                  <Textarea placeholder="Additional payment details..." className="border-slate-300" />
-                </div>
-                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Send zkPayment
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+  const renderProposals = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">Proposals</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-8">
+          <FileText className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-600">No active proposals</p>
+          <p className="text-slate-500 text-sm">Create a new proposal to get started</p>
         </div>
-      </div>
-
-      <div className="grid gap-4">
-        {mockContributors.map((contributor) => (
-          <Card key={contributor.id} className="bg-white border-slate-200 hover:shadow-md transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedContributors.includes(contributor.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedContributors([...selectedContributors, contributor.id])
-                      } else {
-                        setSelectedContributors(selectedContributors.filter((id) => id !== contributor.id))
-                      }
-                    }}
-                    className="w-4 h-4 text-indigo-600"
-                  />
-                  <Avatar>
-                    <AvatarFallback className="bg-indigo-100 text-indigo-600">
-                      {contributor.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">{contributor.name}</h3>
-                    <p className="text-slate-600">{contributor.role}</p>
-                    <p className="text-sm text-slate-500 font-mono">{contributor.wallet}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="font-semibold text-slate-900">${contributor.totalEarned.toLocaleString()}</p>
-                    <p className="text-sm text-slate-600">{contributor.tasksCompleted} tasks</p>
-                  </div>
-                  <Badge
-                    variant={contributor.status === "Active" ? "default" : "secondary"}
-                    className={
-                      contributor.status === "Active" ? "bg-emerald-100 text-emerald-800 border-emerald-200" : ""
-                    }
-                  >
-                    {contributor.status}
-                  </Badge>
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                    Pay Now
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {selectedContributors.length > 0 && (
-        <div className="fixed bottom-6 right-6 bg-white border border-slate-200 rounded-lg shadow-lg p-4">
-          <p className="text-sm text-slate-600 mb-2">{selectedContributors.length} contributors selected</p>
-          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Batch Payment</Button>
-        </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   )
 
-  const renderManageContributors = () => (
+  const renderTasks = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">Task Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-8">
+          <BarChart3 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-600">No active tasks</p>
+          <p className="text-slate-500 text-sm">Assign tasks to contributors</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderTreasury = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">Treasury Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-indigo-900">Treasury Balance</p>
+                <p className="text-2xl font-bold text-indigo-600">${walletState.balance.toLocaleString()}</p>
+              </div>
+              <Shield className="h-8 w-8 text-indigo-600" />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderMembers = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Manage Contributors</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Members</h2>
         <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
           <UserPlus className="h-4 w-4 mr-2" />
-          Add Contributor
-        </Button>
-      </div>
-
-      <div className="flex gap-4 mb-6">
-        <div className="flex-1">
-          <Input
-            placeholder="Search contributors..."
-            className="border-slate-300"
-            prefix={<Search className="h-4 w-4 text-slate-400" />}
-          />
-        </div>
-        <Button variant="outline" className="border-slate-300 bg-transparent">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
+          Add Member
         </Button>
       </div>
 
@@ -434,9 +334,10 @@ export const DAOAdminDashboard: React.FC<DAOAdminDashboardProps> = ({ walletStat
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge
-                    variant={contributor.status === "Active" ? "default" : "secondary"}
                     className={
-                      contributor.status === "Active" ? "bg-emerald-100 text-emerald-800 border-emerald-200" : ""
+                      contributor.status === "Active"
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                        : "bg-slate-100 text-slate-800 border-slate-200"
                     }
                   >
                     {contributor.status}
@@ -444,17 +345,6 @@ export const DAOAdminDashboard: React.FC<DAOAdminDashboardProps> = ({ walletStat
                   <Button variant="outline" size="sm" className="border-slate-300 bg-transparent">
                     Edit
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={
-                      contributor.status === "Active"
-                        ? "border-red-300 text-red-600"
-                        : "border-emerald-300 text-emerald-600"
-                    }
-                  >
-                    {contributor.status === "Active" ? "Deactivate" : "Activate"}
-                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -464,215 +354,64 @@ export const DAOAdminDashboard: React.FC<DAOAdminDashboardProps> = ({ walletStat
     </div>
   )
 
-  const renderTreasuryLogs = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">zkTreasury Logs</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" className="border-slate-300 bg-transparent">
-            Export Logs
-          </Button>
-          <Button variant="outline" className="border-slate-300 bg-transparent">
-            Filter by Date
-          </Button>
+  const renderProfile = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">DAO Configuration</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-slate-700">DAO Name</Label>
+          <Input value="AleoDAO" className="border-slate-300" />
         </div>
-      </div>
-
-      <div className="grid gap-4">
-        {mockTreasuryLogs.map((log) => (
-          <Card key={log.id} className="bg-white border-slate-200 hover:shadow-md transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-slate-900">${log.amount.toLocaleString()}</h3>
-                    <span className="text-slate-500">→</span>
-                    <span className="text-slate-700">{log.recipient}</span>
-                  </div>
-                  <p className="text-slate-600">{log.project}</p>
-                  <p className="text-sm text-slate-500">{log.date}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">{log.status}</Badge>
-                  <Button size="sm" variant="outline" className="border-slate-300 bg-transparent">
-                    <Download className="h-4 w-4 mr-2" />
-                    zkReceipt
-                  </Button>
-                </div>
-              </div>
-
-              <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">zkProof Hash:</span>
-                  <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700">
-                    View Details
-                  </Button>
-                </div>
-                <p className="text-xs font-mono text-slate-500 mt-1 break-all">{log.zkReceiptHash}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  )
-
-  const renderAnalytics = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-900">Analytics</h2>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-slate-900">Monthly Expenditure</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlySpendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="month" stroke="#64748b" />
-                <YAxis stroke="#64748b" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "white",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Bar dataKey="amount" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-slate-900">Top Contributors</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {mockContributors.map((contributor, index) => (
-                <div key={contributor.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">{contributor.name}</p>
-                      <p className="text-sm text-slate-600">{contributor.role}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-slate-900">${contributor.totalEarned.toLocaleString()}</p>
-                    <p className="text-sm text-slate-600">{contributor.tasksCompleted} tasks</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
-
-  const renderSettings = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-slate-900">DAO Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-slate-700">DAO Name</Label>
-              <Input value="AleoDAO" className="border-slate-300" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-700">Purpose</Label>
-              <Textarea
-                value="Building privacy-preserving applications on Aleo blockchain"
-                className="border-slate-300"
-              />
-            </div>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Update Configuration</Button>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-slate-900 flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Treasury Security
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-slate-700">Treasury Wallet</Label>
-              <Input value={walletState.address} className="border-slate-300" readOnly />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-700">Multisig Threshold</Label>
-              <Input value="3 of 5" className="border-slate-300" readOnly />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-700">zkProof Verification</span>
-              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Enabled</Badge>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+        <div className="space-y-2">
+          <Label className="text-slate-700">Purpose</Label>
+          <Textarea value="Building privacy-preserving applications on Aleo blockchain" className="border-slate-300" />
+        </div>
+        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Update Configuration</Button>
+      </CardContent>
+    </Card>
   )
 
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
         return renderDashboard()
-      case "pay":
-        return renderPayContributors()
-      case "manage":
-        return renderManageContributors()
+      case "proposals":
+        return renderProposals()
+      case "tasks":
+        return renderTasks()
       case "treasury":
-        return renderTreasuryLogs()
-      case "analytics":
-        return renderAnalytics()
-      case "settings":
-        return renderSettings()
+        return renderTreasury()
+      case "members":
+        return renderMembers()
+      case "profile":
+        return renderProfile()
       default:
         return renderDashboard()
     }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="flex">
-        {/* Fixed Sidebar */}
-        <div className="fixed left-0 top-0 h-full w-64 bg-slate-900 z-10">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-teal-400 rounded-lg flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">DAO Admin</span>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-blue-50">
+      <TopNavbar />
 
+      <div className="flex pt-16">
+        {/* Fixed Sidebar */}
+        <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white/90 backdrop-blur-sm border-r border-slate-200 z-10">
+          <div className="p-6">
             {/* Wallet Connection */}
             <div className="mb-8">
               {walletState.isConnected ? (
-                <div className="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                    <span className="text-sm text-slate-300">Treasury Connected</span>
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-indigo-700">Treasury Connected</span>
                   </div>
-                  <p className="text-xs text-slate-400 font-mono truncate">{walletState.address}</p>
+                  <p className="text-xs text-indigo-600 font-mono truncate">{walletState.address}</p>
                 </div>
               ) : (
-                <Button
-                  onClick={onConnectWallet}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-700 hover:to-teal-700 text-white"
-                >
+                <Button onClick={onConnectWallet} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
                   <Wallet className="h-4 w-4 mr-2" />
                   Connect Treasury
                 </Button>
@@ -687,10 +426,10 @@ export const DAOAdminDashboard: React.FC<DAOAdminDashboardProps> = ({ walletStat
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                       activeTab === item.id
-                        ? "bg-gradient-to-r from-indigo-600 to-teal-600 text-white"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800"
+                        ? "bg-indigo-600 text-white"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
                     <IconComponent className="h-5 w-5" />

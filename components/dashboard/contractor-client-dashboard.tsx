@@ -6,21 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { TopNavbar } from "@/components/layout/top-navbar"
 import {
   Wallet,
   DollarSign,
   FileText,
   Users,
-  Search,
   CheckCircle,
   XCircle,
   Settings,
   CreditCard,
   TrendingUp,
-  Receipt,
-  UserCheck,
-  Filter,
+  Plus,
+  Briefcase,
 } from "lucide-react"
 
 interface ContractorClientDashboardProps {
@@ -33,15 +31,44 @@ export function ContractorClientDashboard({
   onConnectWallet,
 }: ContractorClientDashboardProps) {
   const [activeTab, setActiveTab] = useState("dashboard")
-  const [isPayModalOpen, setIsPayModalOpen] = useState(false)
 
   const navigationItems = [
-    { id: "dashboard", label: "Dashboard", icon: TrendingUp },
-    { id: "pay-contractor", label: "Pay Contractor", icon: CreditCard },
-    { id: "manage-invoices", label: "Manage Invoices", icon: FileText },
-    { id: "payment-history", label: "zkPayment History", icon: Receipt },
-    { id: "contractor-search", label: "Contractor Search", icon: Search },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "dashboard", label: "Dashboard Overview", icon: TrendingUp },
+    { id: "post-contract", label: "Post Contract", icon: Plus },
+    { id: "my-contracts", label: "My Contracts", icon: Briefcase },
+    { id: "invoices", label: "Invoices", icon: FileText },
+    { id: "disputes", label: "Disputes", icon: XCircle },
+    { id: "profile", label: "Profile", icon: Settings },
+  ]
+
+  const mockContracts = [
+    {
+      id: 1,
+      contractor: "Alice Johnson",
+      project: "Website Development",
+      amount: 2500,
+      status: "Active",
+      startDate: "2024-01-01",
+      endDate: "2024-02-15",
+    },
+    {
+      id: 2,
+      contractor: "Bob Smith",
+      project: "Mobile App UI",
+      amount: 1800,
+      status: "Completed",
+      startDate: "2023-12-15",
+      endDate: "2024-01-10",
+    },
+    {
+      id: 3,
+      contractor: "Carol Davis",
+      project: "Logo Design",
+      amount: 500,
+      status: "Pending",
+      startDate: "2024-01-20",
+      endDate: "2024-02-05",
+    },
   ]
 
   const mockInvoices = [
@@ -74,58 +101,20 @@ export function ContractorClientDashboard({
     },
   ]
 
-  const mockPayments = [
-    {
-      id: 1,
-      contractor: "Alice Johnson",
-      amount: 2500,
-      date: "2024-01-15",
-      project: "Website Development",
-      zkReceipt: "zk_receipt_001",
-    },
-    {
-      id: 2,
-      contractor: "Bob Smith",
-      amount: 1200,
-      date: "2024-01-08",
-      project: "Mobile App",
-      zkReceipt: "zk_receipt_002",
-    },
-    {
-      id: 3,
-      contractor: "Carol Davis",
-      amount: 800,
-      date: "2024-01-03",
-      project: "Logo Design",
-      zkReceipt: "zk_receipt_003",
-    },
-  ]
-
-  const mockContractors = [
-    { id: 1, name: "Alice Johnson", skills: ["React", "TypeScript", "Node.js"], rating: 4.9, jobs: 23, verified: true },
-    { id: 2, name: "Bob Smith", skills: ["UI/UX", "Figma", "Prototyping"], rating: 4.8, jobs: 18, verified: true },
-    {
-      id: 3,
-      name: "Carol Davis",
-      skills: ["Graphic Design", "Branding", "Illustration"],
-      rating: 4.7,
-      jobs: 31,
-      verified: false,
-    },
-  ]
-
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "Active":
       case "Paid":
         return "bg-green-500"
+      case "Completed":
       case "Approved":
         return "bg-blue-500"
       case "Pending":
         return "bg-yellow-500"
-      case "Rejected":
+      case "Disputed":
         return "bg-red-500"
       default:
-        return "bg-gray-500"
+        return "bg-slate-500"
     }
   }
 
@@ -178,22 +167,22 @@ export function ContractorClientDashboard({
         </Card>
       </div>
 
-      {/* Recent Invoices */}
+      {/* Recent Activity */}
       <Card className="bg-white border-slate-200">
         <CardHeader>
-          <CardTitle className="text-slate-900">Recent Invoices</CardTitle>
+          <CardTitle className="text-slate-900">Recent Contracts</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockInvoices.slice(0, 3).map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            {mockContracts.slice(0, 3).map((contract) => (
+              <div key={contract.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                 <div>
-                  <p className="text-slate-900 font-medium">{invoice.project}</p>
-                  <p className="text-slate-600 text-sm">by {invoice.contractor}</p>
+                  <p className="text-slate-900 font-medium">{contract.project}</p>
+                  <p className="text-slate-600 text-sm">with {contract.contractor}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-slate-900 font-bold">${invoice.amount}</p>
-                  <Badge className={`${getStatusColor(invoice.status)} text-white`}>{invoice.status}</Badge>
+                  <p className="text-slate-900 font-bold">${contract.amount}</p>
+                  <Badge className={`${getStatusColor(contract.status)} text-white`}>{contract.status}</Badge>
                 </div>
               </div>
             ))}
@@ -203,92 +192,97 @@ export function ContractorClientDashboard({
     </div>
   )
 
-  const renderPayContractor = () => (
+  const renderPostContract = () => (
     <Card className="bg-white border-slate-200">
       <CardHeader>
-        <CardTitle className="text-slate-900">Pay Contractor</CardTitle>
-        <CardDescription className="text-slate-600">Send payment to a contractor for completed work</CardDescription>
+        <CardTitle className="text-slate-900">Post New Contract</CardTitle>
+        <CardDescription className="text-slate-600">Create a new contract opportunity for contractors</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="contractor-wallet" className="text-slate-700">
-              Contractor Wallet Address
+            <Label htmlFor="project-title" className="text-slate-700">
+              Project Title
             </Label>
-            <Input
-              id="contractor-wallet"
-              placeholder="0x1234567890abcdef..."
-              className="bg-slate-50 border-slate-300"
-            />
+            <Input id="project-title" placeholder="Website Development" className="bg-slate-50 border-slate-300" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="select-invoice" className="text-slate-700">
-              Select Invoice/Project
+            <Label htmlFor="budget" className="text-slate-700">
+              Budget (USD)
             </Label>
-            <Select>
-              <SelectTrigger className="bg-slate-50 border-slate-300">
-                <SelectValue placeholder="Choose invoice" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="invoice-1">Website Development - $2,500</SelectItem>
-                <SelectItem value="invoice-2">Mobile App UI - $1,800</SelectItem>
-                <SelectItem value="custom">Custom Amount</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input id="budget" type="number" placeholder="2500.00" className="bg-slate-50 border-slate-300" />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="payment-amount" className="text-slate-700">
-              Payment Amount (USD)
+            <Label htmlFor="start-date" className="text-slate-700">
+              Start Date
             </Label>
-            <Input id="payment-amount" type="number" placeholder="2500.00" className="bg-slate-50 border-slate-300" />
+            <Input id="start-date" type="date" className="bg-slate-50 border-slate-300" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="payment-type" className="text-slate-700">
-              Payment Type
+            <Label htmlFor="end-date" className="text-slate-700">
+              End Date
             </Label>
-            <Select>
-              <SelectTrigger className="bg-slate-50 border-slate-300">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="full">Full Payment</SelectItem>
-                <SelectItem value="milestone">Milestone Payment</SelectItem>
-                <SelectItem value="partial">Partial Payment</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input id="end-date" type="date" className="bg-slate-50 border-slate-300" />
           </div>
         </div>
 
-        <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-          <h3 className="text-indigo-900 font-medium mb-2">zkPayment Summary</h3>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-indigo-700">Amount:</span>
-              <span className="text-indigo-900 font-medium">$2,500.00</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-indigo-700">Network Fee:</span>
-              <span className="text-indigo-900 font-medium">$2.50</span>
-            </div>
-            <div className="flex justify-between border-t border-indigo-200 pt-1">
-              <span className="text-indigo-700 font-medium">Total:</span>
-              <span className="text-indigo-900 font-bold">$2,502.50</span>
-            </div>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="description" className="text-slate-700">
+            Project Description
+          </Label>
+          <textarea
+            id="description"
+            placeholder="Describe the project requirements..."
+            className="w-full p-3 bg-slate-50 border border-slate-300 rounded-md"
+            rows={4}
+          />
         </div>
 
-        <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">Confirm zkPayment</Button>
+        <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">Post Contract</Button>
       </CardContent>
     </Card>
   )
 
-  const renderManageInvoices = () => (
+  const renderMyContracts = () => (
     <Card className="bg-white border-slate-200">
       <CardHeader>
-        <CardTitle className="text-slate-900">Manage Invoices</CardTitle>
+        <CardTitle className="text-slate-900">My Contracts</CardTitle>
+        <CardDescription className="text-slate-600">Manage your active and completed contracts</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {mockContracts.map((contract) => (
+            <div key={contract.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+              <div className="flex-1">
+                <h3 className="text-slate-900 font-medium">{contract.project}</h3>
+                <p className="text-slate-600 text-sm">Contractor: {contract.contractor}</p>
+                <p className="text-slate-600 text-sm">
+                  Duration: {contract.startDate} - {contract.endDate}
+                </p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <p className="text-slate-900 font-bold">${contract.amount}</p>
+                  <Badge className={`${getStatusColor(contract.status)} text-white`}>{contract.status}</Badge>
+                </div>
+                <Button size="sm" variant="outline" className="border-indigo-600 text-indigo-600 bg-transparent">
+                  View Details
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderInvoices = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">Invoices</CardTitle>
         <CardDescription className="text-slate-600">Review and manage invoices from contractors</CardDescription>
       </CardHeader>
       <CardContent>
@@ -336,116 +330,58 @@ export function ContractorClientDashboard({
     </Card>
   )
 
-  const renderPaymentHistory = () => (
+  const renderDisputes = () => (
     <Card className="bg-white border-slate-200">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-slate-900">zkPayment History</CardTitle>
-            <CardDescription className="text-slate-600">View all payments made to contractors</CardDescription>
-          </div>
-          <div className="flex space-x-2">
-            <Input placeholder="Search by contractor or project..." className="w-64" />
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <CardTitle className="text-slate-900">Disputes</CardTitle>
+        <CardDescription className="text-slate-600">Manage contract disputes and resolutions</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {mockPayments.map((payment) => (
-            <div key={payment.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-              <div>
-                <h3 className="text-slate-900 font-medium">${payment.amount}</h3>
-                <p className="text-slate-600 text-sm">to {payment.contractor}</p>
-                <p className="text-slate-600 text-sm">Project: {payment.project}</p>
-                <p className="text-slate-600 text-sm">{payment.date}</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Badge variant="outline" className="text-green-600 border-green-600">
-                  Completed
-                </Badge>
-                <Button size="sm" variant="outline" className="border-indigo-600 text-indigo-600 bg-transparent">
-                  <Receipt className="h-4 w-4 mr-1" />
-                  zkReceipt
-                </Button>
-              </div>
-            </div>
-          ))}
+        <div className="text-center py-8">
+          <XCircle className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-600">No active disputes</p>
+          <p className="text-slate-500 text-sm">All your contracts are running smoothly</p>
         </div>
       </CardContent>
     </Card>
   )
 
-  const renderContractorSearch = () => (
+  const renderProfile = () => (
     <Card className="bg-white border-slate-200">
       <CardHeader>
-        <CardTitle className="text-slate-900">Contractor Search</CardTitle>
-        <CardDescription className="text-slate-600">Find and hire verified contractors</CardDescription>
+        <CardTitle className="text-slate-900">Profile Settings</CardTitle>
+        <CardDescription className="text-slate-600">Manage your client profile and preferences</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          {/* Search Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input placeholder="Search by skills..." className="bg-slate-50" />
-            <Select>
-              <SelectTrigger className="bg-slate-50">
-                <SelectValue placeholder="Rating" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="4.5+">4.5+ Stars</SelectItem>
-                <SelectItem value="4.0+">4.0+ Stars</SelectItem>
-                <SelectItem value="3.5+">3.5+ Stars</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="bg-slate-50">
-                <SelectValue placeholder="Verification" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="verified">zkBadge Verified</SelectItem>
-                <SelectItem value="all">All Contractors</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="company-name" className="text-slate-700">
+                Company Name
+              </Label>
+              <Input id="company-name" defaultValue="TechCorp Inc." className="bg-slate-50 border-slate-300" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-slate-700">
+                Email
+              </Label>
+              <Input id="email" defaultValue="contact@techcorp.com" className="bg-slate-50 border-slate-300" />
+            </div>
           </div>
 
-          {/* Contractor List */}
-          <div className="space-y-4">
-            {mockContractors.map((contractor) => (
-              <div key={contractor.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-slate-900 font-medium">{contractor.name}</h3>
-                    {contractor.verified && (
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        Verified
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {contractor.skills.map((skill) => (
-                      <Badge key={skill} variant="secondary" className="text-xs">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                  <p className="text-slate-600 text-sm mt-1">
-                    ⭐ {contractor.rating} • {contractor.jobs} jobs completed
-                  </p>
-                </div>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" className="border-slate-300 bg-transparent">
-                    View Profile
-                  </Button>
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                    Hire
-                  </Button>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-slate-700">
+              Company Description
+            </Label>
+            <textarea
+              id="description"
+              defaultValue="Leading technology company specializing in innovative solutions."
+              className="w-full p-3 bg-slate-50 border border-slate-300 rounded-md"
+              rows={3}
+            />
           </div>
+
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Update Profile</Button>
         </div>
       </CardContent>
     </Card>
@@ -455,25 +391,16 @@ export function ContractorClientDashboard({
     switch (activeTab) {
       case "dashboard":
         return renderDashboard()
-      case "pay-contractor":
-        return renderPayContractor()
-      case "manage-invoices":
-        return renderManageInvoices()
-      case "payment-history":
-        return renderPaymentHistory()
-      case "contractor-search":
-        return renderContractorSearch()
-      case "settings":
-        return (
-          <Card className="bg-white border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-slate-900">Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-600">Settings panel coming soon...</p>
-            </CardContent>
-          </Card>
-        )
+      case "post-contract":
+        return renderPostContract()
+      case "my-contracts":
+        return renderMyContracts()
+      case "invoices":
+        return renderInvoices()
+      case "disputes":
+        return renderDisputes()
+      case "profile":
+        return renderProfile()
       default:
         return renderDashboard()
     }
@@ -481,12 +408,14 @@ export function ContractorClientDashboard({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-blue-50">
-      <div className="flex">
-        {/* Fixed Sidebar */}
-        <div className="fixed left-0 top-0 h-full w-64 bg-white/90 backdrop-blur-sm border-r border-slate-200 z-10">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold text-slate-900 mb-8">LeoPay</h1>
+      <TopNavbar />
 
+      <div className="flex pt-16">
+        {" "}
+        {/* Added pt-16 to account for fixed top navbar */}
+        {/* Fixed Sidebar */}
+        <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white/90 backdrop-blur-sm border-r border-slate-200 z-10">
+          <div className="p-6">
             {/* Wallet Connection */}
             <div className="mb-8">
               {walletConnected ? (
@@ -524,7 +453,6 @@ export function ContractorClientDashboard({
             </nav>
           </div>
         </div>
-
         {/* Main Content */}
         <div className="flex-1 ml-64">
           <div className="p-8">{renderContent()}</div>

@@ -7,19 +7,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { TopNavbar } from "@/components/layout/top-navbar"
 import {
   Wallet,
   DollarSign,
-  Calendar,
   FileText,
   Plus,
   Download,
-  Upload,
   CheckCircle,
   Settings,
   Shield,
   TrendingUp,
-  Receipt,
+  Clock,
+  CreditCard,
 } from "lucide-react"
 
 interface ContractorReceiverDashboardProps {
@@ -32,46 +32,79 @@ export function ContractorReceiverDashboard({
   onConnectWallet,
 }: ContractorReceiverDashboardProps) {
   const [activeTab, setActiveTab] = useState("dashboard")
-  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
 
   const navigationItems = [
-    { id: "dashboard", label: "Dashboard", icon: TrendingUp },
-    { id: "submit-invoice", label: "Submit Invoice", icon: Plus },
-    { id: "my-invoices", label: "My Invoices", icon: FileText },
-    { id: "payment-history", label: "Payment History", icon: Receipt },
-    { id: "proof-contract", label: "Proof of Contract", icon: Shield },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "dashboard", label: "Dashboard Overview", icon: TrendingUp },
+    { id: "my-contracts", label: "My Contracts", icon: FileText },
+    { id: "timesheets", label: "Timesheets", icon: Clock },
+    { id: "earnings", label: "Earnings & Withdrawals", icon: CreditCard },
+    { id: "disputes", label: "Disputes", icon: Shield },
+    { id: "profile", label: "Profile", icon: Settings },
   ]
 
-  const mockInvoices = [
+  const mockContracts = [
     {
       id: 1,
-      client: "0x1234...5678",
+      client: "TechCorp Inc.",
       project: "Website Development",
       amount: 2500,
-      status: "Paid",
-      date: "2024-01-15",
+      status: "Active",
+      startDate: "2024-01-01",
+      endDate: "2024-02-15",
     },
-    { id: 2, client: "0x8765...4321", project: "Mobile App UI", amount: 1800, status: "Pending", date: "2024-01-10" },
-    { id: 3, client: "0x9876...1234", project: "Logo Design", amount: 500, status: "Rejected", date: "2024-01-05" },
+    {
+      id: 2,
+      client: "StartupXYZ",
+      project: "Mobile App UI",
+      amount: 1800,
+      status: "Completed",
+      startDate: "2023-12-15",
+      endDate: "2024-01-10",
+    },
+    {
+      id: 3,
+      client: "DesignStudio",
+      project: "Logo Design",
+      amount: 500,
+      status: "Pending",
+      startDate: "2024-01-20",
+      endDate: "2024-02-05",
+    },
   ]
 
-  const mockPayments = [
-    { id: 1, client: "TechCorp Inc.", amount: 2500, date: "2024-01-15", zkReceipt: "zk_receipt_001" },
-    { id: 2, client: "StartupXYZ", amount: 1200, date: "2024-01-08", zkReceipt: "zk_receipt_002" },
-    { id: 3, client: "DesignStudio", amount: 800, date: "2024-01-03", zkReceipt: "zk_receipt_003" },
+  const mockTimesheets = [
+    { id: 1, date: "2024-01-15", project: "Website Development", hours: 8, rate: 75, total: 600 },
+    { id: 2, date: "2024-01-14", project: "Website Development", hours: 6, rate: 75, total: 450 },
+    { id: 3, date: "2024-01-13", project: "Mobile App UI", hours: 7, rate: 65, total: 455 },
+  ]
+
+  const mockEarnings = [
+    { id: 1, client: "TechCorp Inc.", amount: 2500, date: "2024-01-15", status: "Paid", zkReceipt: "zk_receipt_001" },
+    { id: 2, client: "StartupXYZ", amount: 1200, date: "2024-01-08", status: "Pending", zkReceipt: "zk_receipt_002" },
+    {
+      id: 3,
+      client: "DesignStudio",
+      amount: 800,
+      date: "2024-01-03",
+      status: "Withdrawn",
+      zkReceipt: "zk_receipt_003",
+    },
   ]
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "Active":
       case "Paid":
         return "bg-green-500"
+      case "Completed":
+      case "Withdrawn":
+        return "bg-blue-500"
       case "Pending":
         return "bg-yellow-500"
-      case "Rejected":
+      case "Disputed":
         return "bg-red-500"
       default:
-        return "bg-gray-500"
+        return "bg-slate-500"
     }
   }
 
@@ -79,69 +112,67 @@ export function ContractorReceiverDashboard({
     <div className="space-y-6">
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-violet-900/20 to-purple-900/20 border-violet-800/30">
+        <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-violet-100">Wallet Balance</CardTitle>
-            <Wallet className="h-4 w-4 text-violet-400" />
+            <CardTitle className="text-sm font-medium text-indigo-700">Wallet Balance</CardTitle>
+            <Wallet className="h-4 w-4 text-indigo-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">$12,450.00</div>
-            <p className="text-xs text-violet-300">+20.1% from last month</p>
+            <div className="text-2xl font-bold text-indigo-900">$12,450.00</div>
+            <p className="text-xs text-indigo-600">+20.1% from last month</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-emerald-900/20 to-green-900/20 border-emerald-800/30">
+        <Card className="bg-gradient-to-br from-slate-50 to-gray-50 border-slate-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-emerald-100">Total Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-emerald-400" />
+            <CardTitle className="text-sm font-medium text-slate-700">Total Earnings</CardTitle>
+            <DollarSign className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">$45,230.00</div>
-            <p className="text-xs text-emerald-300">+12% this quarter</p>
+            <div className="text-2xl font-bold text-slate-900">$45,230.00</div>
+            <p className="text-xs text-slate-600">+12% this quarter</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-900/20 to-indigo-900/20 border-blue-800/30">
+        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-100">Last Payment</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-400" />
+            <CardTitle className="text-sm font-medium text-emerald-700">Active Contracts</CardTitle>
+            <FileText className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">Jan 15</div>
-            <p className="text-xs text-blue-300">$2,500 from TechCorp</p>
+            <div className="text-2xl font-bold text-emerald-900">3</div>
+            <p className="text-xs text-emerald-600">Currently active</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-900/20 to-red-900/20 border-orange-800/30">
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-100">Completed Contracts</CardTitle>
-            <CheckCircle className="h-4 w-4 text-orange-400" />
+            <CardTitle className="text-sm font-medium text-orange-700">This Month Hours</CardTitle>
+            <Clock className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">23</div>
-            <p className="text-xs text-orange-300">+3 this month</p>
+            <div className="text-2xl font-bold text-orange-900">156</div>
+            <p className="text-xs text-orange-600">Across all contracts</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Recent Activity */}
-      <Card className="bg-gray-900/50 border-gray-700">
+      <Card className="bg-white border-slate-200">
         <CardHeader>
-          <CardTitle className="text-white">Recent Activity</CardTitle>
+          <CardTitle className="text-slate-900">Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockPayments.slice(0, 3).map((payment) => (
-              <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+            {mockEarnings.slice(0, 3).map((earning) => (
+              <div key={earning.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                 <div>
-                  <p className="text-white font-medium">${payment.amount} received</p>
-                  <p className="text-gray-400 text-sm">from {payment.client}</p>
+                  <p className="text-slate-900 font-medium">${earning.amount} payment</p>
+                  <p className="text-slate-600 text-sm">from {earning.client}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-gray-300 text-sm">{payment.date}</p>
-                  <Badge variant="outline" className="text-green-400 border-green-400">
-                    Completed
-                  </Badge>
+                  <p className="text-slate-700 text-sm">{earning.date}</p>
+                  <Badge className={`${getStatusColor(earning.status)} text-white`}>{earning.status}</Badge>
                 </div>
               </div>
             ))}
@@ -151,136 +182,30 @@ export function ContractorReceiverDashboard({
     </div>
   )
 
-  const renderSubmitInvoice = () => (
-    <Card className="bg-gray-900/50 border-gray-700">
+  const renderMyContracts = () => (
+    <Card className="bg-white border-slate-200">
       <CardHeader>
-        <CardTitle className="text-white">Submit New Invoice</CardTitle>
-        <CardDescription className="text-gray-400">Create and submit an invoice to your client</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="client-wallet" className="text-gray-300">
-              Client Wallet Address
-            </Label>
-            <Input
-              id="client-wallet"
-              placeholder="0x1234567890abcdef..."
-              className="bg-gray-800 border-gray-600 text-white"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="project-title" className="text-gray-300">
-              Project Title
-            </Label>
-            <Input
-              id="project-title"
-              placeholder="Website Development"
-              className="bg-gray-800 border-gray-600 text-white"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="amount" className="text-gray-300">
-              Amount (USD)
-            </Label>
-            <Input id="amount" type="number" placeholder="2500.00" className="bg-gray-800 border-gray-600 text-white" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="due-date" className="text-gray-300">
-              Due Date
-            </Label>
-            <Input id="due-date" type="date" className="bg-gray-800 border-gray-600 text-white" />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="description" className="text-gray-300">
-            Project Description
-          </Label>
-          <Textarea
-            id="description"
-            placeholder="Describe the work completed..."
-            className="bg-gray-800 border-gray-600 text-white"
-            rows={4}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-gray-300">Upload Invoice/PDF</Label>
-          <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-400">Drag and drop your invoice or click to browse</p>
-            <Button variant="outline" className="mt-2 border-gray-600 text-gray-300 bg-transparent">
-              Choose File
-            </Button>
-          </div>
-        </div>
-
-        <Button className="w-full bg-violet-600 hover:bg-violet-700 text-white">Submit Invoice</Button>
-      </CardContent>
-    </Card>
-  )
-
-  const renderMyInvoices = () => (
-    <Card className="bg-gray-900/50 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-white">My Invoices</CardTitle>
-        <CardDescription className="text-gray-400">Track your submitted invoices and their status</CardDescription>
+        <CardTitle className="text-slate-900">My Contracts</CardTitle>
+        <CardDescription className="text-slate-600">View and manage your active contracts</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {mockInvoices.map((invoice) => (
-            <div key={invoice.id} className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+          {mockContracts.map((contract) => (
+            <div key={contract.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
               <div className="flex-1">
-                <h3 className="text-white font-medium">{invoice.project}</h3>
-                <p className="text-gray-400 text-sm">Client: {invoice.client}</p>
-                <p className="text-gray-400 text-sm">Date: {invoice.date}</p>
+                <h3 className="text-slate-900 font-medium">{contract.project}</h3>
+                <p className="text-slate-600 text-sm">Client: {contract.client}</p>
+                <p className="text-slate-600 text-sm">
+                  Duration: {contract.startDate} - {contract.endDate}
+                </p>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <p className="text-white font-bold">${invoice.amount}</p>
-                  <Badge className={`${getStatusColor(invoice.status)} text-white`}>{invoice.status}</Badge>
+                  <p className="text-slate-900 font-bold">${contract.amount}</p>
+                  <Badge className={`${getStatusColor(contract.status)} text-white`}>{contract.status}</Badge>
                 </div>
-                {invoice.status === "Rejected" && (
-                  <Button size="sm" variant="outline" className="border-violet-600 text-violet-400 bg-transparent">
-                    Resubmit
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
-
-  const renderPaymentHistory = () => (
-    <Card className="bg-gray-900/50 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-white">Payment History</CardTitle>
-        <CardDescription className="text-gray-400">
-          View all your received payments and download receipts
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {mockPayments.map((payment) => (
-            <div key={payment.id} className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-              <div>
-                <h3 className="text-white font-medium">${payment.amount}</h3>
-                <p className="text-gray-400 text-sm">from {payment.client}</p>
-                <p className="text-gray-400 text-sm">{payment.date}</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Badge variant="outline" className="text-green-400 border-green-400">
-                  Completed
-                </Badge>
-                <Button size="sm" variant="outline" className="border-violet-600 text-violet-400 bg-transparent">
-                  <Download className="h-4 w-4 mr-1" />
-                  zkReceipt
+                <Button size="sm" variant="outline" className="border-indigo-600 text-indigo-600 bg-transparent">
+                  View Details
                 </Button>
               </div>
             </div>
@@ -290,48 +215,154 @@ export function ContractorReceiverDashboard({
     </Card>
   )
 
-  const renderProofOfContract = () => (
-    <Card className="bg-gray-900/50 border-gray-700">
+  const renderTimesheets = () => (
+    <Card className="bg-white border-slate-200">
       <CardHeader>
-        <CardTitle className="text-white">Proof of Contract</CardTitle>
-        <CardDescription className="text-gray-400">
-          Upload contract hashes and delivery proofs for transparency
-        </CardDescription>
+        <CardTitle className="text-slate-900">Timesheets</CardTitle>
+        <CardDescription className="text-slate-600">Track your work hours and submit timesheets</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-gray-300">Contract Hash</Label>
-            <Input placeholder="0xabcdef1234567890..." className="bg-gray-800 border-gray-600 text-white" />
-          </div>
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Timesheet
+          </Button>
 
-          <div className="space-y-2">
-            <Label className="text-gray-300">Upload Delivery Proof</Label>
-            <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-              <Shield className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-400">Upload zkProof of delivery</p>
-              <Button variant="outline" className="mt-2 border-gray-600 text-gray-300 bg-transparent">
-                Choose File
-              </Button>
-            </div>
-          </div>
-
-          <Button className="w-full bg-violet-600 hover:bg-violet-700 text-white">Submit Proof</Button>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-white font-medium">Submitted Proofs</h3>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <div>
-                <p className="text-white text-sm">Website Development Contract</p>
-                <p className="text-gray-400 text-xs">Hash: 0xabc...def</p>
+          <div className="space-y-3">
+            {mockTimesheets.map((timesheet) => (
+              <div key={timesheet.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div>
+                  <p className="text-slate-900 font-medium">{timesheet.project}</p>
+                  <p className="text-slate-600 text-sm">
+                    {timesheet.date} • {timesheet.hours} hours @ ${timesheet.rate}/hr
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-slate-900 font-bold">${timesheet.total}</p>
+                  <Badge variant="outline" className="text-green-600 border-green-600">
+                    Submitted
+                  </Badge>
+                </div>
               </div>
-              <Badge variant="outline" className="text-green-400 border-green-400">
-                Verified
-              </Badge>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderEarnings = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">Earnings & Withdrawals</CardTitle>
+        <CardDescription className="text-slate-600">View your earnings and manage withdrawals</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-indigo-50 border-indigo-200">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-indigo-600 text-sm">Available Balance</p>
+                  <p className="text-2xl font-bold text-indigo-900">$12,450</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-green-50 border-green-200">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-green-600 text-sm">Total Earned</p>
+                  <p className="text-2xl font-bold text-green-900">$45,230</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-50 border-slate-200">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-slate-600 text-sm">Withdrawn</p>
+                  <p className="text-2xl font-bold text-slate-900">$32,780</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">Request Withdrawal</Button>
+
+          <div className="space-y-3">
+            {mockEarnings.map((earning) => (
+              <div key={earning.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div>
+                  <h3 className="text-slate-900 font-medium">${earning.amount}</h3>
+                  <p className="text-slate-600 text-sm">from {earning.client}</p>
+                  <p className="text-slate-600 text-sm">{earning.date}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge className={`${getStatusColor(earning.status)} text-white`}>{earning.status}</Badge>
+                  <Button size="sm" variant="outline" className="border-indigo-600 text-indigo-600 bg-transparent">
+                    <Download className="h-4 w-4 mr-1" />
+                    Receipt
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderDisputes = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">Disputes</CardTitle>
+        <CardDescription className="text-slate-600">Manage contract disputes and resolutions</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-8">
+          <Shield className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-600">No active disputes</p>
+          <p className="text-slate-500 text-sm">All your contracts are running smoothly</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderProfile = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">Profile Settings</CardTitle>
+        <CardDescription className="text-slate-600">Manage your contractor profile and preferences</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="full-name" className="text-slate-700">
+                Full Name
+              </Label>
+              <Input id="full-name" defaultValue="Alex Johnson" className="bg-slate-50 border-slate-300" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-slate-700">
+                Email
+              </Label>
+              <Input id="email" defaultValue="alex@example.com" className="bg-slate-50 border-slate-300" />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bio" className="text-slate-700">
+              Bio
+            </Label>
+            <Textarea
+              id="bio"
+              defaultValue="Experienced contractor specializing in web development and mobile applications."
+              className="bg-slate-50 border-slate-300"
+              rows={3}
+            />
+          </div>
+
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Update Profile</Button>
         </div>
       </CardContent>
     </Card>
@@ -341,47 +372,40 @@ export function ContractorReceiverDashboard({
     switch (activeTab) {
       case "dashboard":
         return renderDashboard()
-      case "submit-invoice":
-        return renderSubmitInvoice()
-      case "my-invoices":
-        return renderMyInvoices()
-      case "payment-history":
-        return renderPaymentHistory()
-      case "proof-contract":
-        return renderProofOfContract()
-      case "settings":
-        return (
-          <Card className="bg-gray-900/50 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-400">Settings panel coming soon...</p>
-            </CardContent>
-          </Card>
-        )
+      case "my-contracts":
+        return renderMyContracts()
+      case "timesheets":
+        return renderTimesheets()
+      case "earnings":
+        return renderEarnings()
+      case "disputes":
+        return renderDisputes()
+      case "profile":
+        return renderProfile()
       default:
         return renderDashboard()
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-violet-900">
-      <div className="flex">
-        {/* Fixed Sidebar */}
-        <div className="fixed left-0 top-0 h-full w-64 bg-gray-900/80 backdrop-blur-sm border-r border-gray-700 z-10">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold text-white mb-8">LeoPay</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-blue-50">
+      <TopNavbar />
 
+      <div className="flex pt-16">
+        {" "}
+        {/* Added pt-16 to account for fixed top navbar */}
+        {/* Fixed Sidebar */}
+        <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white/90 backdrop-blur-sm border-r border-slate-200 z-10">
+          <div className="p-6">
             {/* Wallet Connection */}
             <div className="mb-8">
               {walletConnected ? (
-                <div className="flex items-center space-x-2 text-green-400">
+                <div className="flex items-center space-x-2 text-green-600">
                   <CheckCircle className="h-4 w-4" />
                   <span className="text-sm">Wallet Connected</span>
                 </div>
               ) : (
-                <Button onClick={onConnectWallet} className="w-full bg-violet-600 hover:bg-violet-700 text-white">
+                <Button onClick={onConnectWallet} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
                   <Wallet className="h-4 w-4 mr-2" />
                   Connect Wallet
                 </Button>
@@ -398,8 +422,8 @@ export function ContractorReceiverDashboard({
                     onClick={() => setActiveTab(item.id)}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
                       activeTab === item.id
-                        ? "bg-violet-600 text-white"
-                        : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                        ? "bg-indigo-600 text-white"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
                     <IconComponent className="h-5 w-5" />
@@ -410,7 +434,6 @@ export function ContractorReceiverDashboard({
             </nav>
           </div>
         </div>
-
         {/* Main Content */}
         <div className="flex-1 ml-64">
           <div className="p-8">{renderContent()}</div>

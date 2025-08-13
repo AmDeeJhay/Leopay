@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
+import { TopNavbar } from "@/components/layout/top-navbar"
 import {
   Wallet,
   Calendar,
@@ -18,13 +19,10 @@ import {
   Download,
   ExternalLink,
   Award,
-  Shield,
   Github,
   MessageSquare,
   Settings,
-  Bell,
   Copy,
-  Star,
   Zap,
 } from "lucide-react"
 
@@ -43,14 +41,14 @@ export const DAOContributorDashboard: React.FC<DAOContributorDashboardProps> = (
   const [activeTab, setActiveTab] = useState("dashboard")
 
   const navigationItems = [
-    { id: "dashboard", label: "Dashboard", icon: TrendingUp },
-    { id: "contributions", label: "Contribution Tracker", icon: CheckCircle },
+    { id: "dashboard", label: "Dashboard Overview", icon: TrendingUp },
+    { id: "tasks", label: "Assigned Tasks", icon: CheckCircle },
     { id: "payments", label: "Payments", icon: DollarSign },
-    { id: "reputation", label: "DAO Reputation", icon: Award },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "voting", label: "DAO Voting", icon: Award },
+    { id: "profile", label: "Profile", icon: Settings },
   ]
 
-  const mockContributions = [
+  const mockTasks = [
     {
       id: 1,
       title: "Frontend UI Redesign",
@@ -110,109 +108,99 @@ export const DAOContributorDashboard: React.FC<DAOContributorDashboardProps> = (
     <div className="space-y-6">
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all duration-300">
+        <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Wallet Balance</CardTitle>
-            <Wallet className="h-4 w-4 text-cyan-400" />
+            <CardTitle className="text-sm font-medium text-indigo-700">Wallet Balance</CardTitle>
+            <Wallet className="h-4 w-4 text-indigo-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">${walletState.balance.toLocaleString()}</div>
-            <p className="text-xs text-slate-400 mt-1">Available for withdrawal</p>
+            <div className="text-2xl font-bold text-indigo-900">${walletState.balance.toLocaleString()}</div>
+            <p className="text-xs text-indigo-600 mt-1">Available for withdrawal</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all duration-300">
+        <Card className="bg-gradient-to-br from-slate-50 to-gray-50 border-slate-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Last Payment</CardTitle>
-            <Calendar className="h-4 w-4 text-green-400" />
+            <CardTitle className="text-sm font-medium text-slate-700">Last Payment</CardTitle>
+            <Calendar className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">$2,500</div>
-            <p className="text-xs text-slate-400 mt-1">Jan 15, 2024</p>
+            <div className="text-2xl font-bold text-slate-900">$2,500</div>
+            <p className="text-xs text-slate-600 mt-1">Jan 15, 2024</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all duration-300">
+        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Total Contributions</CardTitle>
-            <TrendingUp className="h-4 w-4 text-indigo-400" />
+            <CardTitle className="text-sm font-medium text-emerald-700">Total Contributions</CardTitle>
+            <TrendingUp className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">$12,750</div>
-            <p className="text-xs text-slate-400 mt-1">All-time earnings</p>
+            <div className="text-2xl font-bold text-emerald-900">$12,750</div>
+            <p className="text-xs text-emerald-600 mt-1">All-time earnings</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all duration-300">
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">DAO</CardTitle>
-            <Building2 className="h-4 w-4 text-purple-400" />
+            <CardTitle className="text-sm font-medium text-orange-700">DAO</CardTitle>
+            <Building2 className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">AleoDAO</div>
-            <p className="text-xs text-slate-400 mt-1">Core contributor</p>
+            <div className="text-2xl font-bold text-orange-900">AleoDAO</div>
+            <p className="text-xs text-orange-600 mt-1">Core contributor</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white border-slate-200">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Zap className="h-5 w-5 text-cyan-400" />
-              Recent Contributions
+            <CardTitle className="text-slate-900 flex items-center gap-2">
+              <Zap className="h-5 w-5 text-indigo-600" />
+              Recent Tasks
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {mockContributions.slice(0, 3).map((contribution) => (
-              <div
-                key={contribution.id}
-                className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700/70 transition-colors"
-              >
+            {mockTasks.slice(0, 3).map((task) => (
+              <div key={task.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                 <div>
-                  <p className="font-medium text-white">{contribution.title}</p>
-                  <p className="text-sm text-slate-400">{contribution.type}</p>
+                  <p className="font-medium text-slate-900">{task.title}</p>
+                  <p className="text-sm text-slate-600">{task.type}</p>
                 </div>
                 <Badge
-                  variant={
-                    contribution.status === "Paid"
-                      ? "default"
-                      : contribution.status === "Approved"
-                        ? "secondary"
-                        : "outline"
-                  }
                   className={
-                    contribution.status === "Paid"
-                      ? "bg-green-500/20 text-green-400 border-green-500/30"
-                      : contribution.status === "Approved"
-                        ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                        : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                    task.status === "Paid"
+                      ? "bg-green-100 text-green-800 border-green-200"
+                      : task.status === "Approved"
+                        ? "bg-blue-100 text-blue-800 border-blue-200"
+                        : "bg-yellow-100 text-yellow-800 border-yellow-200"
                   }
                 >
-                  {contribution.status}
+                  {task.status}
                 </Badge>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-white border-slate-200">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Award className="h-5 w-5 text-purple-400" />
+            <CardTitle className="text-slate-900 flex items-center gap-2">
+              <Award className="h-5 w-5 text-indigo-600" />
               Reputation Overview
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-slate-300">Contribution Score</span>
-              <span className="text-2xl font-bold text-white">847</span>
+              <span className="text-slate-700">Contribution Score</span>
+              <span className="text-2xl font-bold text-slate-900">847</span>
             </div>
-            <Progress value={84} className="h-2 bg-slate-700" />
+            <Progress value={84} className="h-2" />
             <div className="flex gap-2 flex-wrap">
               {mockBadges.slice(0, 2).map((badge, index) => (
-                <Badge key={index} variant="outline" className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+                <Badge key={index} variant="outline" className="text-indigo-600 border-indigo-200">
                   {badge.name}
                 </Badge>
               ))}
@@ -223,69 +211,49 @@ export const DAOContributorDashboard: React.FC<DAOContributorDashboardProps> = (
     </div>
   )
 
-  const renderContributions = () => (
+  const renderTasks = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Contribution Tracker</h2>
-        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Submit New Contribution</Button>
+        <h2 className="text-2xl font-bold text-slate-900">Assigned Tasks</h2>
+        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Submit New Task</Button>
       </div>
 
       <div className="grid gap-4">
-        {mockContributions.map((contribution) => (
-          <Card
-            key={contribution.id}
-            className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all duration-300"
-          >
+        {mockTasks.map((task) => (
+          <Card key={task.id} className="bg-white border-slate-200">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-white">{contribution.title}</h3>
-                  <p className="text-slate-400">{contribution.type}</p>
-                  <div className="flex items-center gap-4 text-sm text-slate-400">
-                    <span>Amount: ${contribution.amount.toLocaleString()}</span>
-                    <span>Date: {contribution.date}</span>
+                  <h3 className="text-lg font-semibold text-slate-900">{task.title}</h3>
+                  <p className="text-slate-600">{task.type}</p>
+                  <div className="flex items-center gap-4 text-sm text-slate-600">
+                    <span>Amount: ${task.amount.toLocaleString()}</span>
+                    <span>Date: {task.date}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge
-                    variant={
-                      contribution.status === "Paid"
-                        ? "default"
-                        : contribution.status === "Approved"
-                          ? "secondary"
-                          : "outline"
-                    }
-                    className={
-                      contribution.status === "Paid"
-                        ? "bg-green-500/20 text-green-400 border-green-500/30"
-                        : contribution.status === "Approved"
-                          ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                          : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                    }
-                  >
-                    {contribution.status}
-                  </Badge>
-                </div>
+                <Badge
+                  className={
+                    task.status === "Paid"
+                      ? "bg-green-100 text-green-800 border-green-200"
+                      : task.status === "Approved"
+                        ? "bg-blue-100 text-blue-800 border-blue-200"
+                        : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                  }
+                >
+                  {task.status}
+                </Badge>
               </div>
 
               <div className="flex gap-2 mt-4">
-                {contribution.githubLink && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent"
-                  >
+                {task.githubLink && (
+                  <Button variant="outline" size="sm" className="border-slate-300 bg-transparent">
                     <Github className="h-4 w-4 mr-2" />
                     GitHub
                     <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>
                 )}
-                {contribution.proposalLink && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent"
-                  >
+                {task.proposalLink && (
+                  <Button variant="outline" size="sm" className="border-slate-300 bg-transparent">
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Proposal
                     <ExternalLink className="h-3 w-3 ml-1" />
@@ -302,12 +270,12 @@ export const DAOContributorDashboard: React.FC<DAOContributorDashboardProps> = (
   const renderPayments = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Payment History</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Payment History</h2>
         <div className="flex gap-2">
-          <Button variant="outline" className="border-slate-600 text-slate-300 bg-transparent">
+          <Button variant="outline" className="border-slate-300 bg-transparent">
             Filter by Month
           </Button>
-          <Button variant="outline" className="border-slate-600 text-slate-300 bg-transparent">
+          <Button variant="outline" className="border-slate-300 bg-transparent">
             Export All
           </Button>
         </div>
@@ -315,35 +283,32 @@ export const DAOContributorDashboard: React.FC<DAOContributorDashboardProps> = (
 
       <div className="grid gap-4">
         {mockPayments.map((payment) => (
-          <Card
-            key={payment.id}
-            className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-all duration-300"
-          >
+          <Card key={payment.id} className="bg-white border-slate-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-white">${payment.amount.toLocaleString()}</h3>
-                  <p className="text-slate-400">{payment.project}</p>
+                  <h3 className="text-lg font-semibold text-slate-900">${payment.amount.toLocaleString()}</h3>
+                  <p className="text-slate-600">{payment.project}</p>
                   <p className="text-sm text-slate-500">{payment.date}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">{payment.status}</Badge>
-                  <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white">
+                  <Badge className="bg-green-100 text-green-800 border-green-200">{payment.status}</Badge>
+                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
                     <Download className="h-4 w-4 mr-2" />
                     zkReceipt
                   </Button>
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
+              <div className="mt-4 p-3 bg-slate-50 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">zkProof Hash:</span>
-                  <Button variant="ghost" size="sm" className="text-cyan-400 hover:text-cyan-300">
+                  <span className="text-sm text-slate-600">zkProof Hash:</span>
+                  <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700">
                     <Copy className="h-3 w-3 mr-1" />
                     Copy
                   </Button>
                 </div>
-                <p className="text-xs font-mono text-slate-300 mt-1 break-all">{payment.zkReceiptHash}</p>
+                <p className="text-xs font-mono text-slate-700 mt-1 break-all">{payment.zkReceiptHash}</p>
               </div>
             </CardContent>
           </Card>
@@ -352,219 +317,79 @@ export const DAOContributorDashboard: React.FC<DAOContributorDashboardProps> = (
     </div>
   )
 
-  const renderReputation = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-white">DAO Reputation</h2>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Award className="h-5 w-5 text-purple-400" />
-              Contribution Badges
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {mockBadges.map((badge, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      badge.level === "Gold"
-                        ? "bg-yellow-400"
-                        : badge.level === "Silver"
-                          ? "bg-gray-400"
-                          : "bg-orange-400"
-                    }`}
-                  />
-                  <div>
-                    <p className="font-medium text-white">{badge.name}</p>
-                    <p className="text-sm text-slate-400">Earned: {badge.earned}</p>
-                  </div>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={
-                    badge.level === "Gold"
-                      ? "border-yellow-400 text-yellow-400"
-                      : badge.level === "Silver"
-                        ? "border-gray-400 text-gray-400"
-                        : "border-orange-400 text-orange-400"
-                  }
-                >
-                  {badge.level}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Shield className="h-5 w-5 text-cyan-400" />
-              zkProof of Contribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-slate-700/50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-400">Contribution Hash:</span>
-                <Button variant="ghost" size="sm" className="text-cyan-400 hover:text-cyan-300">
-                  <Copy className="h-3 w-3 mr-1" />
-                  Copy
-                </Button>
-              </div>
-              <p className="text-xs font-mono text-slate-300 break-all">
-                zk_contrib_0x7f8e9d6c5b4a3928374650192837465019283746
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">Total Contributions</span>
-                <span className="text-white font-semibold">23</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">Success Rate</span>
-                <span className="text-green-400 font-semibold">96%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">Reputation Score</span>
-                <div className="flex items-center gap-2">
-                  <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                  <span className="text-white font-semibold">4.8</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white">Public Links</CardTitle>
-          <CardDescription className="text-slate-400">
-            Optional links to showcase your contributions publicly
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent">
-              <Github className="h-4 w-4 mr-2" />
-              GitHub Profile
-              <ExternalLink className="h-3 w-3 ml-1" />
-            </Button>
-            <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Forum Profile
-              <ExternalLink className="h-3 w-3 ml-1" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+  const renderVoting = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">DAO Voting</CardTitle>
+        <CardDescription className="text-slate-600">Participate in governance decisions</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-8">
+          <Award className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-600">No active proposals</p>
+          <p className="text-slate-500 text-sm">Check back later for governance votes</p>
+        </div>
+      </CardContent>
+    </Card>
   )
 
-  const renderSettings = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-white">Settings</h2>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white">DAO Connection</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">Connected DAO</Label>
-              <Input value="AleoDAO" className="bg-slate-700 border-slate-600 text-white" readOnly />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-300">Wallet Address</Label>
-              <Input value={walletState.address} className="bg-slate-700 border-slate-600 text-white" readOnly />
-            </div>
-            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">Update Connection</Button>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notifications
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Payment Notifications</span>
-              <Button variant="outline" size="sm" className="border-green-500 text-green-400 bg-transparent">
-                Enabled
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Task Updates</span>
-              <Button variant="outline" size="sm" className="border-green-500 text-green-400 bg-transparent">
-                Enabled
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">DAO Announcements</span>
-              <Button variant="outline" size="sm" className="border-slate-600 text-slate-400 bg-transparent">
-                Disabled
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+  const renderProfile = () => (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-slate-900">Profile Settings</CardTitle>
+        <CardDescription className="text-slate-600">Manage your DAO contributor profile</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-slate-700">Connected DAO</Label>
+          <Input value="AleoDAO" className="border-slate-300" readOnly />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-slate-700">Wallet Address</Label>
+          <Input value={walletState.address} className="border-slate-300" readOnly />
+        </div>
+        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Update Profile</Button>
+      </CardContent>
+    </Card>
   )
 
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
         return renderDashboard()
-      case "contributions":
-        return renderContributions()
+      case "tasks":
+        return renderTasks()
       case "payments":
         return renderPayments()
-      case "reputation":
-        return renderReputation()
-      case "settings":
-        return renderSettings()
+      case "voting":
+        return renderVoting()
+      case "profile":
+        return renderProfile()
       default:
         return renderDashboard()
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="flex">
-        {/* Fixed Sidebar */}
-        <div className="fixed left-0 top-0 h-full w-64 bg-slate-900/95 backdrop-blur-sm border-r border-slate-700 z-10">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-lg flex items-center justify-center">
-                <Zap className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">LeoPay DAO</span>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-blue-50">
+      <TopNavbar />
 
+      <div className="flex pt-16">
+        {/* Fixed Sidebar */}
+        <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white/90 backdrop-blur-sm border-r border-slate-200 z-10">
+          <div className="p-6">
             {/* Wallet Connection */}
             <div className="mb-8">
               {walletState.isConnected ? (
-                <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span className="text-sm text-slate-300">Connected</span>
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-indigo-700">Connected</span>
                   </div>
-                  <p className="text-xs text-slate-400 font-mono truncate">{walletState.address}</p>
+                  <p className="text-xs text-indigo-600 font-mono truncate">{walletState.address}</p>
                 </div>
               ) : (
-                <Button
-                  onClick={onConnectWallet}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white"
-                >
+                <Button onClick={onConnectWallet} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
                   <Wallet className="h-4 w-4 mr-2" />
                   Connect Wallet
                 </Button>
@@ -579,10 +404,10 @@ export const DAOContributorDashboard: React.FC<DAOContributorDashboardProps> = (
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all duration-200 ${
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                       activeTab === item.id
-                        ? "bg-gradient-to-r from-indigo-600/20 to-cyan-600/20 text-white border border-indigo-500/30"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                        ? "bg-indigo-600 text-white"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
                     <IconComponent className="h-5 w-5" />

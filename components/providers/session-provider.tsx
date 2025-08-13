@@ -208,13 +208,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     seedIfEmpty()
     const u = localStorage.getItem(USERS_KEY)
     const p = localStorage.getItem(PROFILES_KEY)
-    const sessionId = localStorage.getItem(SESSION_KEY)
-    const currentRoleData = localStorage.getItem(CURRENT_ROLE_KEY)
+    // const sessionId = localStorage.getItem(SESSION_KEY)
+    // const currentRoleData = localStorage.getItem(CURRENT_ROLE_KEY)
 
     setUsers(u ? JSON.parse(u) : [])
     setProfiles(p ? JSON.parse(p) : [])
-    setUserId(sessionId)
-    setCurrentRole(currentRoleData ? JSON.parse(currentRoleData) : null)
+    // setUserId(sessionId)
+    // setCurrentRole(currentRoleData ? JSON.parse(currentRoleData) : null)
     setReady(true)
   }, [])
 

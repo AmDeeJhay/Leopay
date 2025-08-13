@@ -17,7 +17,7 @@ import { Bell, MessageCircle, HelpCircle, Search, ChevronDown, Wallet, LogOut } 
 interface TopNavbarProps {
   currentRole: string
   currentSubrole: string
-  userRoles: Array<{ role: string; subrole: string; href: string }>
+  userRoles?: Array<{ role: string; subrole: string; href: string }>
   walletConnected?: boolean
   walletAddress?: string
   onRoleSwitch?: (href: string) => void
@@ -27,7 +27,7 @@ interface TopNavbarProps {
 export function TopNavbar({
   currentRole,
   currentSubrole,
-  userRoles,
+  userRoles = [], // Default to empty array
   walletConnected = false,
   walletAddress,
   onRoleSwitch,
@@ -61,22 +61,28 @@ export function TopNavbar({
             <DropdownMenuContent align="start" className="w-64">
               <div className="px-3 py-2 text-sm font-medium text-slate-700">Switch Role</div>
               <DropdownMenuSeparator />
-              {userRoles.map((roleData, index) => (
-                <DropdownMenuItem
-                  key={index}
-                  onClick={() => onRoleSwitch?.(roleData.href)}
-                  className="flex items-center justify-between"
-                >
-                  <span>
-                    {roleData.role} – {roleData.subrole}
-                  </span>
-                  {roleData.role === currentRole && roleData.subrole === currentSubrole && (
-                    <Badge variant="secondary" className="text-xs">
-                      Current
-                    </Badge>
-                  )}
+              {userRoles && userRoles.length > 0 ? (
+                userRoles.map((roleData, index) => (
+                  <DropdownMenuItem
+                    key={index}
+                    onClick={() => onRoleSwitch?.(roleData.href)}
+                    className="flex items-center justify-between"
+                  >
+                    <span>
+                      {roleData.role} – {roleData.subrole}
+                    </span>
+                    {roleData.role === currentRole && roleData.subrole === currentSubrole && (
+                      <Badge variant="secondary" className="text-xs">
+                        Current
+                      </Badge>
+                    )}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <DropdownMenuItem disabled>
+                  <span className="text-slate-400">No additional roles available</span>
                 </DropdownMenuItem>
-              ))}
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => (window.location.href = "/role-selection")}>
                 <span>Add New Role</span>
