@@ -1,8 +1,15 @@
-export default function ContractorReceiverDashboard() {
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold">Contractor – Receiver</h1>
-      <p className="text-muted-foreground">Submit invoices and receive payments.</p>
-    </main>
-  )
+"use client"
+
+import { useState } from "react"
+import { ContractorReceiverDashboard } from "@/components/dashboard/contractor-receiver-dashboard"
+
+export default function ContractorReceiverPage() {
+  const [walletConnected, setWalletConnected] = useState(false)
+
+  const handleConnectWallet = () => {
+    // Simulate wallet connection
+    setWalletConnected(true)
+  }
+
+  return <ContractorReceiverDashboard walletConnected={walletConnected} onConnectWallet={handleConnectWallet} />
 }
