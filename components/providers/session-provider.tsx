@@ -405,7 +405,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [userId, currentRole, profiles, users, persist])
 
   const getUserRoles = React.useCallback(() => {
-    if (!currentProfile) return []
+    if (!currentProfile || !currentProfile.roles) return []
     return currentProfile.roles.map((role) => ({
       role: role.roleName,
       subrole: role.subrole,

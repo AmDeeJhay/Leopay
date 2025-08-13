@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { TopNavbar } from "@/components/layout/top-navbar"
 import {
   Wallet,
   TrendingUp,
@@ -39,6 +40,12 @@ interface SenderDashboardProps {
 
 export function SenderDashboard({ walletStatus, setWalletStatus }: SenderDashboardProps) {
   const [activeTab, setActiveTab] = useState("dashboard")
+
+  const userRoles = [
+    { role: "Freelancer", subrole: "Sender", href: "/dashboard/freelancer/sender" },
+    { role: "Freelancer", subrole: "Receiver", href: "/dashboard/freelancer/receiver" },
+    { role: "Contractor", subrole: "Client", href: "/dashboard/contractor/client" },
+  ]
 
   const dashboardStats = {
     totalSpent: 45250,
@@ -166,6 +173,14 @@ export function SenderDashboard({ walletStatus, setWalletStatus }: SenderDashboa
   const handleConnectWallet = () => {
     setWalletStatus("connecting")
     setTimeout(() => setWalletStatus("connected"), 2000)
+  }
+
+  const handleRoleSwitch = (href: string) => {
+    window.location.href = href
+  }
+
+  const handleLogout = () => {
+    window.location.href = "/auth"
   }
 
   const sidebarItems = [
@@ -619,73 +634,86 @@ export function SenderDashboard({ walletStatus, setWalletStatus }: SenderDashboa
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
-      {/* Fixed Sidebar */}
-      <div className="w-64 bg-white border-r border-slate-200 flex flex-col fixed h-full">
-        <div className="p-6 border-b border-slate-200">
-          <h2 className="text-xl font-bold text-slate-900">LeoPay Client</h2>
-          <p className="text-sm text-slate-600">Project Management</p>
-        </div>
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
+      <TopNavbar
+        currentRole="Freelancer"
+        currentSubrole="Sender"
+        userRoles={userRoles}
+        walletConnected={walletStatus === "connected"}
+        walletAddress={walletStatus === "connected" ? "0x1234...5678" : undefined}
+        onRoleSwitch={handleRoleSwitch}
+        onLogout={handleLogout}
+      />
 
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            {sidebarItems.map((item) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                    activeTab === item.id
-                      ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                      : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
+      <div className="flex flex-1">
+        <div className="w-64 bg-white border-r border-slate-200 flex flex-col fixed h-full top-16">
+          <div className="p-6 border-b border-slate-200">
+            <h2 className="text-xl font-bold text-slate-900">LeoPay Client</h2>
+            <p className="text-sm text-slate-600">Project Management</p>
+          </div>
 
-        <div className="p-4 border-t border-slate-200">
-          <button className="w-full flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
-            <LogOut className="h-5 w-5" />
-            Sign Out
-          </button>
-        </div>
-      </div>
+          <nav className="flex-1 p-4">
+            <ul className="space-y-2">
+              {sidebarItems.map((item) => (
+                <li key={item.id}>
+                  <button
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                      activeTab === item.id
+                        ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 ml-64">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Client Dashboard</h1>
-              <p className="text-slate-600">Project spending and freelancer management overview</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button
-                onClick={handleConnectWallet}
-                variant={walletStatus === "connected" ? "outline" : "default"}
-                className="flex items-center gap-2"
-                disabled={walletStatus === "connecting"}
-              >
-                <Wallet className="h-4 w-4" />
-                {walletStatus === "connecting"
-                  ? "Connecting..."
-                  : walletStatus === "connected"
-                    ? "Connected"
-                    : "Connect Wallet"}
-              </Button>
-              <Button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700">
-                <Plus className="h-4 w-4" />
-                New Project
-              </Button>
-            </div>
+          <div className="p-4 border-t border-slate-200">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg"
+            >
+              <LogOut className="h-5 w-5" />
+              Sign Out
+            </button>
           </div>
         </div>
 
-        {renderContent()}
+        <div className="flex-1 p-6 ml-64 pt-20">
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">Client Dashboard</h1>
+                <p className="text-slate-600">Project spending and freelancer management overview</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={handleConnectWallet}
+                  variant={walletStatus === "connected" ? "outline" : "default"}
+                  className="flex items-center gap-2"
+                  disabled={walletStatus === "connecting"}
+                >
+                  <Wallet className="h-4 w-4" />
+                  {walletStatus === "connecting"
+                    ? "Connecting..."
+                    : walletStatus === "connected"
+                      ? "Connected"
+                      : "Connect Wallet"}
+                </Button>
+                <Button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700">
+                  <Plus className="h-4 w-4" />
+                  New Project
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {renderContent()}
+        </div>
       </div>
     </div>
   )
