@@ -23,6 +23,11 @@ export function ModernAuthForm() {
   const [error, setError] = React.useState<string | null>(null)
 
   async function handleAuth(mode: "login" | "signup") {
+    if (!email.trim() || !password.trim()) {
+      setError("Please enter both email and password")
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
@@ -31,7 +36,7 @@ export function ModernAuthForm() {
       if (!res.ok) {
         setError(res.error || "Authentication failed")
       } else {
-        router.push(next || res.next || "/dashboard")
+        router.push(res.next || "/role-selection")
       }
     } catch {
       setError("Something went wrong. Please try again.")
@@ -44,12 +49,12 @@ export function ModernAuthForm() {
     <Card className="backdrop-blur-sm bg-white/90 border-0 shadow-2xl">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl font-bold">Welcome to LeoPay</CardTitle>
-        <CardDescription className="text-lg">Secure payments with a smooth, client-only sign-in</CardDescription>
+        <CardDescription className="text-lg">Secure payments with privacy-preserving zkTechnology</CardDescription>
         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-700 font-medium">Demo Accounts:</p>
-          <p className="text-xs text-blue-600">demo@leopay.app / password</p>
-          <p className="text-xs text-blue-600">business@leopay.app / password</p>
-          <p className="text-xs text-blue-600">contractor@leopay.app / password</p>
+          <p className="text-sm text-blue-700 font-medium">Demo Accounts (Multi-Role Support):</p>
+          <p className="text-xs text-blue-600">demo@leopay.app / password (Freelancer + Contractor)</p>
+          <p className="text-xs text-blue-600">business@leopay.app / password (Employer + Freelancer)</p>
+          <p className="text-xs text-blue-600">contractor@leopay.app / password (Contractor + DAO)</p>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -87,6 +92,7 @@ export function ModernAuthForm() {
                 placeholder="••••••••"
                 autoComplete="current-password"
                 required
+                onKeyDown={(e) => e.key === "Enter" && handleAuth("login")}
               />
             </div>
             <Button className="w-full" disabled={loading} onClick={() => handleAuth("login")}>
@@ -116,6 +122,7 @@ export function ModernAuthForm() {
                 placeholder="Create a strong password"
                 autoComplete="new-password"
                 required
+                onKeyDown={(e) => e.key === "Enter" && handleAuth("signup")}
               />
             </div>
             <Button className="w-full" disabled={loading} onClick={() => handleAuth("signup")}>

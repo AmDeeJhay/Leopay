@@ -1,8 +1,22 @@
-export default function DaoContributorDashboard() {
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold">DAO – Contributor</h1>
-      <p className="text-muted-foreground">Track contributions and receive DAO payments.</p>
-    </main>
-  )
+"use client"
+
+import { useState } from "react"
+import { DAOContributorDashboard } from "@/components/dashboard/dao-contributor-dashboard"
+
+export default function DaoContributorPage() {
+  const [walletState, setWalletState] = useState({
+    isConnected: false,
+    address: "",
+    balance: 0,
+  })
+
+  const handleConnectWallet = () => {
+    setWalletState({
+      isConnected: true,
+      address: "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc",
+      balance: 12750,
+    })
+  }
+
+  return <DAOContributorDashboard walletState={walletState} onConnectWallet={handleConnectWallet} />
 }

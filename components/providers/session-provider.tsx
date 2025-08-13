@@ -2,15 +2,22 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import type { UserRole } from "@/lib/types"
 
-type Subrole = "receiver" | "sender"
+type Subrole = "receiver" | "sender" | "client" | "admin" | "contributor"
 
 type MockUser = {
   id: string
   email: string
   password: string
   createdAt: string
+}
+
+type RoleData = {
+  roleName: string
+  subrole: string
+  kycCompleted: boolean
+  kycData: Record<string, any>
+  profileCompleted: boolean
 }
 
 type MockProfile = {
@@ -28,10 +35,7 @@ type MockProfile = {
   website: string | null
   avatar_url: string | null
   phone_number: string | null
-  role: UserRole | null
-  subrole: Subrole | null
-  kyc_verified: boolean
-  profile_completed: boolean
+  roles: RoleData[] // Changed from single role to array of roles
   total_earnings: number
   projects_completed: number
   client_rating: number
@@ -43,13 +47,16 @@ type SessionState = {
   ready: boolean
   user: MockUser | null
   profile: MockProfile | null
+  currentRole: RoleData | null
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; next?: string }>
   signup: (email: string, password: string) => Promise<{ ok: boolean; error?: string; next?: string }>
   logout: () => void
-  setRoleAndSubrole: (role: UserRole, subrole: Subrole | null) => { ok: boolean; next: string }
+  selectRole: (roleName: string, subrole: string) => { ok: boolean; next: string; error?: string }
+  addRole: (roleName: string, subrole: string) => { ok: boolean; next: string }
   updateProfile: (patch: Partial<MockProfile>) => void
-  completeKycAndProfile: () => { ok: boolean; next: string }
-  getDashboardPath: (role?: UserRole | null, subrole?: Subrole | null) => string
+  completeKycForCurrentRole: () => { ok: boolean; next: string }
+  getDashboardPath: (roleName?: string, subrole?: string) => string
+  getUserRoles: () => Array<{ role: string; subrole: string; href: string }>
 }
 
 const SessionContext = React.createContext<SessionState | null>(null)
@@ -57,6 +64,7 @@ const SessionContext = React.createContext<SessionState | null>(null)
 const USERS_KEY = "leopay:users"
 const PROFILES_KEY = "leopay:profiles"
 const SESSION_KEY = "leopay:session"
+const CURRENT_ROLE_KEY = "leopay:current_role"
 
 function nowISO() {
   return new Date().toISOString()
@@ -85,7 +93,6 @@ function seedIfEmpty() {
     profiles.push(profile)
   }
 
-  // Demo user 1 - needs onboarding
   add(
     { id: "demo-user-1", email: "demo@leopay.app", password: "password" },
     {
@@ -103,17 +110,16 @@ function seedIfEmpty() {
       website: "",
       avatar_url: "",
       phone_number: "",
-      role: null,
-      subrole: null,
-      kyc_verified: false,
-      profile_completed: false,
+      roles: [
+        { roleName: "freelancer", subrole: "receiver", kycCompleted: true, kycData: {}, profileCompleted: true },
+        { roleName: "contractor", subrole: "receiver", kycCompleted: true, kycData: {}, profileCompleted: true },
+      ],
       total_earnings: 45000,
       projects_completed: 28,
       client_rating: 5,
     },
   )
 
-  // Demo user 2 - employee (receiver)
   add(
     { id: "demo-user-2", email: "business@leopay.app", password: "password" },
     {
@@ -131,17 +137,16 @@ function seedIfEmpty() {
       website: "https://techstart.com",
       avatar_url: "",
       phone_number: "",
-      role: "employee",
-      subrole: "receiver",
-      kyc_verified: true,
-      profile_completed: true,
+      roles: [
+        { roleName: "employer", subrole: "sender", kycCompleted: true, kycData: {}, profileCompleted: true },
+        { roleName: "freelancer", subrole: "sender", kycCompleted: true, kycData: {}, profileCompleted: true },
+      ],
       total_earnings: 0,
       projects_completed: 0,
       client_rating: 0,
     },
   )
 
-  // Demo user 3 - contractor (sender)
   add(
     { id: "demo-user-3", email: "contractor@leopay.app", password: "password" },
     {
@@ -159,10 +164,10 @@ function seedIfEmpty() {
       website: "",
       avatar_url: "",
       phone_number: "",
-      role: "freelancer",
-      subrole: "sender",
-      kyc_verified: true,
-      profile_completed: true,
+      roles: [
+        { roleName: "contractor", subrole: "receiver", kycCompleted: true, kycData: {}, profileCompleted: true },
+        { roleName: "dao", subrole: "contributor", kycCompleted: true, kycData: {}, profileCompleted: true },
+      ],
       total_earnings: 32000,
       projects_completed: 15,
       client_rating: 4.7,
@@ -173,20 +178,20 @@ function seedIfEmpty() {
   localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles))
 }
 
-function getDashboardPath(role?: UserRole | null, subrole?: Subrole | null) {
-  switch (role) {
+function getDashboardPath(roleName?: string, subrole?: string) {
+  switch (roleName) {
     case "freelancer":
       return subrole === "sender" ? "/dashboard/freelancer/sender" : "/dashboard/freelancer/receiver"
     case "contractor":
-      return subrole === "sender" ? "/dashboard/contractor/sender" : "/dashboard/contractor/receiver"
+      return subrole === "client" ? "/dashboard/contractor/client" : "/dashboard/contractor/receiver"
     case "employee":
-      return "/dashboard/employee/receiver"
+      return "/dashboard/employee"
     case "employer":
-      return "/dashboard/employer/sender"
+      return "/dashboard/employer"
     case "dao":
-      return subrole === "sender" ? "/dashboard/dao/admin" : "/dashboard/dao/contributor"
+      return subrole === "admin" ? "/dashboard/dao/admin" : "/dashboard/dao/contributor"
     default:
-      return "/dashboard"
+      return "/role-selection"
   }
 }
 
@@ -196,16 +201,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = React.useState<MockUser[]>([])
   const [profiles, setProfiles] = React.useState<MockProfile[]>([])
   const [userId, setUserId] = React.useState<string | null>(null)
+  const [currentRole, setCurrentRole] = React.useState<RoleData | null>(null)
 
   React.useEffect(() => {
     if (typeof window === "undefined") return
     seedIfEmpty()
     const u = localStorage.getItem(USERS_KEY)
     const p = localStorage.getItem(PROFILES_KEY)
-    const s = localStorage.getItem(SESSION_KEY)
+    const sessionId = localStorage.getItem(SESSION_KEY)
+    const currentRoleData = localStorage.getItem(CURRENT_ROLE_KEY)
+
     setUsers(u ? JSON.parse(u) : [])
     setProfiles(p ? JSON.parse(p) : [])
-    setUserId(s || null)
+    setUserId(sessionId)
+    setCurrentRole(currentRoleData ? JSON.parse(currentRoleData) : null)
     setReady(true)
   }, [])
 
@@ -225,19 +234,28 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     async (email: string, password: string) => {
       const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password)
       if (!user) return { ok: false, error: "Invalid email or password" }
+
       setUserId(user.id)
       if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, user.id)
-      // decide next path
+
       const profile = profiles.find((p) => p.id === user.id) || null
-      if (!profile?.role) return { ok: true, next: "/onboarding/role-selection" }
-      if (
-        profile.role === "freelancer" &&
-        profile.subrole === "receiver" &&
-        (!profile.profile_completed || !profile.kyc_verified)
-      ) {
+      if (!profile || profile.roles.length === 0) {
+        return { ok: true, next: "/role-selection" }
+      }
+
+      if (profile.roles.length > 1) {
+        return { ok: true, next: "/role-selection" }
+      }
+
+      const role = profile.roles[0]
+      setCurrentRole(role)
+      if (typeof window !== "undefined") localStorage.setItem(CURRENT_ROLE_KEY, JSON.stringify(role))
+
+      if (!role.kycCompleted || !role.profileCompleted) {
         return { ok: true, next: "/profile/complete" }
       }
-      return { ok: true, next: getDashboardPath(profile.role, profile.subrole) }
+
+      return { ok: true, next: getDashboardPath(role.roleName, role.subrole) }
     },
     [users, profiles],
   )
@@ -265,10 +283,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         website: "",
         avatar_url: "",
         phone_number: "",
-        role: null,
-        subrole: null,
-        kyc_verified: false,
-        profile_completed: false,
+        roles: [], // Start with empty roles array
         total_earnings: 0,
         projects_completed: 0,
         client_rating: 0,
@@ -280,45 +295,70 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       persist(nextUsers, nextProfiles)
       setUserId(id)
       if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, id)
-      return { ok: true, next: "/onboarding/role-selection" }
+      return { ok: true, next: "/role-selection" }
     },
     [users, profiles, persist],
   )
 
   const logout = React.useCallback(() => {
     setUserId(null)
-    if (typeof window !== "undefined") localStorage.removeItem(SESSION_KEY)
+    setCurrentRole(null)
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(SESSION_KEY)
+      localStorage.removeItem(CURRENT_ROLE_KEY)
+    }
     router.push("/auth")
   }, [router])
 
-  const setRoleAndSubrole = React.useCallback(
-    (role: UserRole, subrole: Subrole | null) => {
+  const selectRole = React.useCallback(
+    (roleName: string, subrole: string) => {
+      if (!userId || !currentProfile) return { ok: false, next: "/auth", error: "Not authenticated" }
+
+      const existingRole = currentProfile.roles.find((r) => r.roleName === roleName && r.subrole === subrole)
+      if (!existingRole) {
+        return { ok: false, next: "/role-selection", error: "Role not found. Please add this role first." }
+      }
+
+      setCurrentRole(existingRole)
+      if (typeof window !== "undefined") localStorage.setItem(CURRENT_ROLE_KEY, JSON.stringify(existingRole))
+
+      if (!existingRole.kycCompleted || !existingRole.profileCompleted) {
+        return { ok: true, next: "/profile/complete" }
+      }
+
+      return { ok: true, next: getDashboardPath(roleName, subrole) }
+    },
+    [userId, currentProfile],
+  )
+
+  const addRole = React.useCallback(
+    (roleName: string, subrole: string) => {
       if (!userId) return { ok: false, next: "/auth" }
       const idx = profiles.findIndex((p) => p.id === userId)
       if (idx === -1) return { ok: false, next: "/auth" }
 
-      // normalize fixed subroles for roles without choice
-      let finalSubrole: Subrole | null = subrole
-      if (role === "employee") finalSubrole = "receiver"
-      if (role === "employer") finalSubrole = "sender"
+      const newRole: RoleData = {
+        roleName,
+        subrole,
+        kycCompleted: false,
+        kycData: {},
+        profileCompleted: false,
+      }
 
-      const requiresKyc = role === "freelancer" && finalSubrole === "receiver"
       const updated: MockProfile = {
         ...profiles[idx],
-        role,
-        subrole: finalSubrole,
-        profile_completed: requiresKyc ? false : true,
-        kyc_verified: requiresKyc ? false : true,
+        roles: [...profiles[idx].roles, newRole],
         updated_at: nowISO(),
       }
+
       const nextProfiles = [...profiles]
       nextProfiles[idx] = updated
       persist(users, nextProfiles)
 
-      if (requiresKyc) {
-        return { ok: true, next: "/profile/complete" }
-      }
-      return { ok: true, next: getDashboardPath(role, finalSubrole) }
+      setCurrentRole(newRole)
+      if (typeof window !== "undefined") localStorage.setItem(CURRENT_ROLE_KEY, JSON.stringify(newRole))
+
+      return { ok: true, next: "/profile/complete" }
     },
     [userId, profiles, users, persist],
   )
@@ -336,33 +376,57 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [userId, profiles, users, persist],
   )
 
-  const completeKycAndProfile = React.useCallback(() => {
-    if (!userId) return { ok: false, next: "/auth" }
+  const completeKycForCurrentRole = React.useCallback(() => {
+    if (!userId || !currentRole) return { ok: false, next: "/auth" }
     const idx = profiles.findIndex((p) => p.id === userId)
     if (idx === -1) return { ok: false, next: "/auth" }
+
+    const updatedRoles = profiles[idx].roles.map((role) =>
+      role.roleName === currentRole.roleName && role.subrole === currentRole.subrole
+        ? { ...role, kycCompleted: true, profileCompleted: true }
+        : role,
+    )
+
     const updated: MockProfile = {
       ...profiles[idx],
-      kyc_verified: true,
-      profile_completed: true,
+      roles: updatedRoles,
       updated_at: nowISO(),
     }
+
     const nextProfiles = [...profiles]
     nextProfiles[idx] = updated
     persist(users, nextProfiles)
-    return { ok: true, next: getDashboardPath(updated.role, updated.subrole) }
-  }, [userId, profiles, users, persist])
+
+    const updatedCurrentRole = { ...currentRole, kycCompleted: true, profileCompleted: true }
+    setCurrentRole(updatedCurrentRole)
+    if (typeof window !== "undefined") localStorage.setItem(CURRENT_ROLE_KEY, JSON.stringify(updatedCurrentRole))
+
+    return { ok: true, next: getDashboardPath(currentRole.roleName, currentRole.subrole) }
+  }, [userId, currentRole, profiles, users, persist])
+
+  const getUserRoles = React.useCallback(() => {
+    if (!currentProfile) return []
+    return currentProfile.roles.map((role) => ({
+      role: role.roleName,
+      subrole: role.subrole,
+      href: getDashboardPath(role.roleName, role.subrole),
+    }))
+  }, [currentProfile])
 
   const value: SessionState = {
     ready,
     user: currentUser,
     profile: currentProfile,
+    currentRole,
     login,
     signup,
     logout,
-    setRoleAndSubrole,
+    selectRole,
+    addRole,
     updateProfile,
-    completeKycAndProfile,
+    completeKycForCurrentRole,
     getDashboardPath,
+    getUserRoles,
   }
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
