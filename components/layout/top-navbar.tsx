@@ -35,6 +35,8 @@ export function TopNavbar({
 }: TopNavbarProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
+  const safeUserRoles = Array.isArray(userRoles) ? userRoles : []
+
   return (
     <nav className="bg-white border-b border-slate-200 px-6 py-3 sticky top-0 z-50">
       <div className="flex items-center justify-between">
@@ -61,23 +63,30 @@ export function TopNavbar({
             <DropdownMenuContent align="start" className="w-64">
               <div className="px-3 py-2 text-sm font-medium text-slate-700">Switch Role</div>
               <DropdownMenuSeparator />
-              {userRoles && userRoles.length > 0 ? (
-                userRoles.map((roleData, index) => (
-                  <DropdownMenuItem
-                    key={index}
-                    onClick={() => onRoleSwitch?.(roleData.href)}
-                    className="flex items-center justify-between"
-                  >
-                    <span>
-                      {roleData.role} – {roleData.subrole}
-                    </span>
-                    {roleData.role === currentRole && roleData.subrole === currentSubrole && (
-                      <Badge variant="secondary" className="text-xs">
-                        Current
-                      </Badge>
-                    )}
-                  </DropdownMenuItem>
-                ))
+              {safeUserRoles && safeUserRoles.length > 0 ? (
+                safeUserRoles.map((roleData, index) => {
+                  // Additional safety check for roleData object
+                  if (!roleData || typeof roleData !== "object") {
+                    return null
+                  }
+
+                  return (
+                    <DropdownMenuItem
+                      key={index}
+                      onClick={() => onRoleSwitch?.(roleData.href)}
+                      className="flex items-center justify-between"
+                    >
+                      <span>
+                        {roleData.role || "Unknown"} – {roleData.subrole || "Unknown"}
+                      </span>
+                      {roleData.role === currentRole && roleData.subrole === currentSubrole && (
+                        <Badge variant="secondary" className="text-xs">
+                          Current
+                        </Badge>
+                      )}
+                    </DropdownMenuItem>
+                  )
+                })
               ) : (
                 <DropdownMenuItem disabled>
                   <span className="text-slate-400">No additional roles available</span>
